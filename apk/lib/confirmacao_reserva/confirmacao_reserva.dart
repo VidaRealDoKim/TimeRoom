@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '';
 
 // Classe principal que representa a tela de confirmação de reserva.
 // Usamos um StatelessWidget pois o conteúdo da tela é estático,
