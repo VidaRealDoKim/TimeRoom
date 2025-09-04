@@ -33,22 +33,54 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final supabase = Supabase.instance.client;
+  State<HomePage> createState() => _HomePageState();
+}
 
+class _HomePageState extends State<HomePage> {
+  final supabase = Supabase.instance.client;
+  String message = "Clique para testar a conexão";
+
+  Future<void> _testConnection() async {
+    try {
+      final response = await supabase.from('users').select().limit(1);
+
+      setState(() {
+        message = "✅ Conectado! Retorno: $response";
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Conexão com Supabase bem-sucedida!")),
+      );
+    } catch (e) {
+      setState(() {
+        message = "❌ Erro ao conectar: $e";
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Erro: $e")),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Supabase Flutter')),
       body: Center(
-        child: ElevatedButton(
-          onPressed: () async {
-            final response = await supabase.from('users').select().limit(1);
-            debugPrint(response.toString());
-          },
-          child: const Text('Testar conexão'),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _testConnection,
+              child: const Text('Testar conexão'),
+            ),
+          ],
         ),
       ),
     );
