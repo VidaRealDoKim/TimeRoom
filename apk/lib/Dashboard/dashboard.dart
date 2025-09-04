@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-
-// Uncomment when the screens are implemented
-// import 'nova_reserva.dart';
+import 'package:apk/nova_reserva/nova_reserva.dart';
 // import 'perfil.dart';
 // import 'salas_disponiveis.dart';
 
@@ -14,22 +12,22 @@ class DashboardPage extends StatelessWidget {
       {
         "icon": Icons.add_circle,
         "title": "Nova Reserva",
-        // "route": const NovaReservaPage()
+        "route": const NovaReservaPage(),
       },
       {
         "icon": Icons.meeting_room,
         "title": "Minhas Reservas",
-        // "route": const SalasDisponiveisPage()
+        "route": null, // depois troca por tela real
       },
       {
         "icon": Icons.apartment,
         "title": "Salas Disponíveis",
-        // "route": const SalasDisponiveisPage()
+        "route": null, // depois troca por tela real
       },
       {
         "icon": Icons.person,
         "title": "Perfil",
-        // "route": const PerfilPage()
+        "route": null, // depois troca por tela real
       },
     ];
 
@@ -53,14 +51,18 @@ class DashboardPage extends StatelessWidget {
             icon: menuItems[index]["icon"],
             title: menuItems[index]["title"],
             onTap: () {
-              // Navigation will be enabled when screens are ready
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (_) => menuItems[index]["route"]),
-              // );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Clicou em ${menuItems[index]["title"]}")),
-              );
+              if (menuItems[index]["route"] != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => menuItems[index]["route"],
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Clicou em ${menuItems[index]["title"]}")),
+                );
+              }
             },
           );
         },

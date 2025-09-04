@@ -13,7 +13,7 @@ import 'dashboard/dashboard.dart';
 // import 'auth/login.dart';
 // import 'auth/register.dart';
 // import 'auth/forgot_password.dart';
-// import 'screens/nova_reserva.dart';
+import 'nova_reserva/nova_reserva.dart';
 // import 'screens/perfil.dart';
 // import 'screens/salas_disponiveis.dart';
 
@@ -75,7 +75,7 @@ class MyApp extends StatelessWidget {
         // '/login':   (context) => const LoginPage(),          // Tela de Login
         // '/register':(context) => const RegisterPage(),       // Tela de Registro
         // '/forgot':  (context) => const ForgotPasswordPage(), // Tela de Recuperação de Senha
-        // '/nova_reserva': (context) => const NovaReservaPage(),
+        '/nova_reserva': (context) => const NovaReservaPage(),
         // '/perfil':  (context) => const PerfilPage(),
         // '/salas_disponiveis': (context) => const SalasDisponiveisPage(),
       },
