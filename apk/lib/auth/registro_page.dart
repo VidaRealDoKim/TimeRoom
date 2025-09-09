@@ -1,5 +1,6 @@
 // lib/auth/register.dart
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -14,6 +15,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -22,6 +24,48 @@ class _RegisterPageState extends State<RegisterPage> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _register() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _loading = true);
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    final name = _nameController.text.trim();
+
+    try {
+      final response = await Supabase.instance.client.auth.signUp(
+        email: email,
+        password: password,
+        userMetadata: {'name': name}, // adiciona o nome ao metadata do usuário
+      );
+
+      if (response.user != null) {
+        // Cadastro bem-sucedido
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cadastro realizado com sucesso! Verifique seu e-mail.'),
+          ),
+        );
+        Navigator.pushReplacementNamed(context, '/dashboard');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Falha ao cadastrar.')),
+        );
+      }
+    } on AuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erro inesperado. Tente novamente.')),
+      );
+    } finally {
+      setState(() => _loading = false);
+    }
   }
 
   @override
@@ -38,11 +82,11 @@ class _RegisterPageState extends State<RegisterPage> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12.0),
-                boxShadow: [
+                boxShadow: const [
                   BoxShadow(
                     color: Colors.black12,
                     blurRadius: 6,
-                    offset: const Offset(0, 3),
+                    offset: Offset(0, 3),
                   ),
                 ],
               ),
@@ -51,14 +95,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // --- Logo ---
                     Image.asset(
                       'assets/logo.png',
                       height: 100,
                     ),
                     const SizedBox(height: 32.0),
-
-                    // --- Campo Nome Completo ---
                     const Text('Nome completo',
                         style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8.0),
@@ -67,8 +108,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       decoration: const InputDecoration(
                         hintText: 'Insira seu nome',
                         border: OutlineInputBorder(),
-                        contentPadding:
-                        EdgeInsets.symmetric(horizontal: 12.0),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -78,8 +118,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       },
                     ),
                     const SizedBox(height: 16.0),
-
-                    // --- Campo E-mail ---
                     const Text('E-mail',
                         style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8.0),
@@ -89,8 +127,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       decoration: const InputDecoration(
                         hintText: 'Insira seu e-mail',
                         border: OutlineInputBorder(),
-                        contentPadding:
-                        EdgeInsets.symmetric(horizontal: 12.0),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -100,8 +137,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       },
                     ),
                     const SizedBox(height: 16.0),
-
-                    // --- Campo Senha ---
                     const Text('Senha',
                         style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8.0),
@@ -111,8 +146,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       decoration: const InputDecoration(
                         hintText: 'Insira sua senha',
                         border: OutlineInputBorder(),
-                        contentPadding:
-                        EdgeInsets.symmetric(horizontal: 12.0),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -125,8 +159,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       },
                     ),
                     const SizedBox(height: 16.0),
-
-                    // --- Campo Confirme a Senha ---
                     const Text('Confirme a senha',
                         style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8.0),
@@ -136,8 +168,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       decoration: const InputDecoration(
                         hintText: 'Repita sua senha',
                         border: OutlineInputBorder(),
-                        contentPadding:
-                        EdgeInsets.symmetric(horizontal: 12.0),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
                       ),
                       validator: (value) {
                         if (value != _passwordController.text) {
@@ -147,16 +178,8 @@ class _RegisterPageState extends State<RegisterPage> {
                       },
                     ),
                     const SizedBox(height: 24.0),
-
-                    // --- Botão Cadastrar-se ---
                     ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          // TODO: Adicionar lógica de cadastro com Supabase
-                          print('Nome: ${_nameController.text}');
-                          print('Email: ${_emailController.text}');
-                        }
-                      },
+                      onPressed: _loading ? null : _register,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.teal[400],
                         foregroundColor: Colors.white,
@@ -165,17 +188,17 @@ class _RegisterPageState extends State<RegisterPage> {
                           borderRadius: BorderRadius.circular(8.0),
                         ),
                       ),
-                      child: const Text(
+                      child: _loading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
                         'Cadastrar-se',
                         style: TextStyle(fontSize: 16),
                       ),
                     ),
                     const SizedBox(height: 16.0),
-
-                    // --- Link "Já possuo uma conta" ---
                     TextButton(
                       onPressed: () {
-                        Navigator.pop(context); // Volta para a tela anterior (Login)
+                        Navigator.pop(context); // Volta para a tela de login
                       },
                       child: Text(
                         'Já possuo uma conta',
