@@ -1,13 +1,80 @@
 import 'package:flutter/material.dart';
 import 'package:apk/pages/nova_reserva.dart';
 
-class DashboardPage extends StatelessWidget {
+// Telas de exemplo
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text("Página Home", style: TextStyle(fontSize: 20)),
+    );
+  }
+}
+
+class ReservasPage extends StatelessWidget {
+  const ReservasPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text("Minhas Reservas", style: TextStyle(fontSize: 20)),
+    );
+  }
+}
+
+class SalasPage extends StatelessWidget {
+  const SalasPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text("Salas Disponíveis", style: TextStyle(fontSize: 20)),
+    );
+  }
+}
+
+class PerfilPage extends StatelessWidget {
+  const PerfilPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text("Meu Perfil", style: TextStyle(fontSize: 20)),
+    );
+  }
+}
+
+// Dashboard principal
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
+
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  int _selectedIndex = 0;
+
+  // Lista de telas que serão exibidas
+  final List<Widget> _pages = const [
+    HomePage(),
+    ReservasPage(),
+    SalasPage(),
+    PerfilPage(),
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // AppBar simples estilo menu hamburguer
+      // AppBar
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
@@ -17,33 +84,10 @@ class DashboardPage extends StatelessWidget {
         ),
       ),
 
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            SizedBox(height: 8),
-            Text(
-              "Minhas Salas",
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            SizedBox(height: 4),
-            Text(
-              "Reservas Atuais",
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.black54,
-              ),
-            ),
-          ],
-        ),
-      ),
+      // Conteúdo da tela muda conforme a aba
+      body: _pages[_selectedIndex],
 
-      // Botão flutuante estilo arredondado
+      // Botão de Nova Reserva
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.push(
@@ -60,10 +104,11 @@ class DashboardPage extends StatelessWidget {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
 
-      // Barra inferior de navegação
+      // Barra inferior
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        currentIndex: 0, // índice da aba atual (0 = Home)
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
         selectedItemColor: const Color(0xFF00796B),
         unselectedItemColor: Colors.white,
         backgroundColor: const Color(0xFF1ABC9C),
@@ -73,9 +118,6 @@ class DashboardPage extends StatelessWidget {
           BottomNavigationBarItem(icon: Icon(Icons.meeting_room), label: "Salas"),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil"),
         ],
-        onTap: (index) {
-          // aqui você troca de página conforme a aba
-        },
       ),
     );
   }
