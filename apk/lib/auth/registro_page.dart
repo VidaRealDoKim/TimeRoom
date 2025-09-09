@@ -39,7 +39,6 @@ class _RegisterPageState extends State<RegisterPage> {
       final response = await Supabase.instance.client.auth.signUp(
         email: email,
         password: password,
-        userMetadata: {'name': name}, // adiciona o nome ao metadata do usuário
       );
 
       if (response.user != null) {
