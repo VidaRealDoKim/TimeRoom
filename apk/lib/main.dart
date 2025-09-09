@@ -14,6 +14,7 @@ import 'pages/nova_reserva.dart';
 import './auth/login_page.dart';
 import './auth/registro_page.dart';
 import './auth/recuperacao_page.dart';
+import 'pages/admin/admin_dashboard.dart';
 
 // -----------------------------------------------------------------------------
 // Função principal do aplicativo
@@ -78,6 +79,9 @@ class MyApp extends StatelessWidget {
         // '/reservas':(context) => const ReservasPage(),
         // '/salas':   (context) => const SalasPage(),
         // '/perfil':  (context) => const PerfilPage(),
+
+        // Telas Admin
+        '/admindashboard': (context) => const AdminDashboardPage(),
 
         // Subtelas
         '/nova_reserva':       (context) => const NovaReservaPage(),

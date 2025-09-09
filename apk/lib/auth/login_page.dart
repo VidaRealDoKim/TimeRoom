@@ -31,16 +31,38 @@ class _LoginPageState extends State<LoginPage> {
     final password = _passwordController.text;
 
     try {
+      // Login com Supabase
       final response = await Supabase.instance.client.auth.signInWithPassword(
         email: email,
         password: password,
       );
 
-      if (response.user != null) {
-        // Login bem-sucedido, navega para dashboard
-        Navigator.pushReplacementNamed(context, '/dashboard');
+      final user = response.user;
+
+      if (user != null) {
+        // Pegar role do usuário no perfil
+        final profile = await Supabase.instance.client
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .maybeSingle();
+
+        if (profile == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Perfil não encontrado.')),
+          );
+          setState(() => _loading = false);
+          return;
+        }
+
+        final role = profile['role'] as String;
+
+        if (role == 'admin') {
+          Navigator.pushReplacementNamed(context, '/admindashboard');
+        } else {
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        }
       } else {
-        // Caso não haja usuário (erro)
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Falha ao autenticar.')),
         );
@@ -72,11 +94,11 @@ class _LoginPageState extends State<LoginPage> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12.0),
-                boxShadow: [
+                boxShadow: const [
                   BoxShadow(
                     color: Colors.black12,
                     blurRadius: 6,
-                    offset: const Offset(0, 3),
+                    offset: Offset(0, 3),
                   ),
                 ],
               ),
