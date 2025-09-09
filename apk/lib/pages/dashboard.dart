@@ -116,8 +116,8 @@ class _DashboardPageState extends State<DashboardPage> {
               leading: const Icon(Icons.calendar_today),
               title: const Text("Reservas"),
               onTap: () {
-                _onItemTapped(1);
                 Navigator.pop(context);
+                Navigator.pushNamed(context, '/reservas');
               },
             ),
             ListTile(
