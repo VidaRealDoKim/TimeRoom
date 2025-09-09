@@ -16,6 +16,15 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF1ABC9C), // fundo verde
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1ABC9C),
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text(
+          "Nova Reserva",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -54,7 +63,7 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
                   fontWeight: FontWeight.bold),
             ),
             const Text(
-              "Escolha uma data",
+              "Escolha uma data e selecione uma sala",
               style: TextStyle(color: Colors.white70),
             ),
             const SizedBox(height: 10),
@@ -72,19 +81,6 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
           ],
         ),
       ),
-
-      // Barra inferior de navegação
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFF1ABC9C),
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: "Reservas"),
-          BottomNavigationBarItem(icon: Icon(Icons.meeting_room), label: "Salas"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil"),
-        ],
-      ),
     );
   }
 
@@ -96,7 +92,10 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
         title: Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(descricao),
         onTap: () {
-          // ação ao clicar (ex: navegar p/ detalhes)
+          // Futuro: abrir página de detalhes/confirmar reserva
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Você selecionou: $titulo")),
+          );
         },
       ),
     );
