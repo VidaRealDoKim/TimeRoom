@@ -16,13 +16,11 @@ import 'pages/nova_reserva.dart';
 // Função principal do aplicativo
 // Inicializa configurações essenciais antes de rodar o app.
 // -----------------------------------------------------------------------------
-
 Future<void> main() async {
   // Garante que o Flutter esteja completamente inicializado
   WidgetsFlutterBinding.ensureInitialized();
 
   // Carrega variáveis de ambiente do arquivo `.env`
-  // Necessário para obter as credenciais do Supabase (URL e Anon Key)
   try {
     await dotenv.load(fileName: ".env");
     print("✅ .env carregado com sucesso!");
@@ -30,11 +28,11 @@ Future<void> main() async {
     print("❌ Erro ao carregar .env: $e");
   }
 
+  // Inicializa a conexão com o Supabase usando as variáveis do .env
   try {
-    // Inicializa a conexão com o Supabase usando as variáveis do .env
     await Supabase.initialize(
       url: dotenv.env['SUPABASE_URL']!,          // URL do projeto Supabase
-      anonKey: dotenv.env['SUPABASE_ANON_KEY']!,// Chave pública do projeto
+      anonKey: dotenv.env['SUPABASE_ANON_KEY']!, // Chave pública do projeto
     );
     print("✅ Supabase conectado com sucesso!");
   } catch (e) {
@@ -56,39 +54,32 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       // Remove a faixa vermelha "DEBUG" no canto superior direito
-      debugShowCheckedModeBanner: true,
+      debugShowCheckedModeBanner: false,
 
       // Define a tela inicial ao abrir o app
-
-      //futuramente vai para login.
+      // Futuramente pode ser alterado para Login
       initialRoute: '/dashboard',
 
       // -----------------------------------------------------------------------
       // Rotas nomeadas do aplicativo
-      // Cada rota mapeia para uma página específica.
       // -----------------------------------------------------------------------
-
       routes: {
+        // Telas Auth (ativar futuramente)
+        // '/login':   (context) => const LoginPage(),
+        // '/register':(context) => const RegisterPage(),
+        // '/forgot':  (context) => const ForgotPasswordPage(),
 
-        //Telas Auth
-        // '/login':   (context) => const LoginPage(),          // Tela de Login
-        // '/register':(context) => const RegisterPage(),       // Tela de Registro
-        // '/forgot':  (context) => const ForgotPasswordPage(), // Tela de Recuperação de Senha
+        // Telas Principais
+        '/dashboard': (context) => const DashboardPage(),
+        // '/home':    (context) => const HomePage(),
+        // '/reservas':(context) => const ReservasPage(),
+        // '/salas':   (context) => const SalasPage(),
+        // '/perfil':  (context) => const PerfilPage(),
 
-
-        //Telas Principais
-        '/dashboard':    (context) => const DashboardPage(),    // Tela Dashboard
-        // '/home':      (context) => const HomePage(),         // Tela de Inicio
-        // '/reservas':  (context) => const ReservasPage(),     // Tela de Reservas
-        // '/salas':     (context) => const SalasPage(),        // Tela de Salas
-        // '/perfil':  (context)   => const PerfilPage(),       // Tela de Perfil
-
-        //Subtelas
-        '/nova_reserva': (context) => const NovaReservaPage(),  // Tela de Nova Reserva
-        '/confirmacao_reserva': (context) => const ConfirmacaoReservaScreen(),
-        // '/salas_disponiveis': (context) => const SalasDisponiveisPage(),
-
-
+        // Subtelas
+        '/nova_reserva':       (context) => const NovaReservaPage(),
+        '/confirmacao_reserva':(context) => const ConfirmacaoReservaScreen(),
+        // '/salas_disponiveis':(context) => const SalasDisponiveisPage(),
       },
     );
   }
