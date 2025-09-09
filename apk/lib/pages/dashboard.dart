@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:apk/pages/nova_reserva.dart';
 
-// Telas de exemplo
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -46,7 +45,6 @@ class PerfilPage extends StatelessWidget {
   }
 }
 
-// Dashboard principal
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
@@ -57,7 +55,6 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   int _selectedIndex = 0;
 
-  // Lista de telas que serão exibidas
   final List<Widget> _pages = const [
     HomePage(),
     ReservasPage(),
@@ -71,45 +68,44 @@ class _DashboardPageState extends State<DashboardPage> {
     });
   }
 
-  void _onLogout() {
-    // Futuramente conectar com Supabase Auth
-    // Supabase.instance.client.auth.signOut();
-    Navigator.of(context).pushReplacementNamed('/login');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Logout realizado!")),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // AppBar com menu hamburguer
+      // AppBar com botão do Drawer
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.black87),
       ),
 
-      // Drawer lateral
+      // Drawer (menu lateral)
       drawer: Drawer(
-        child: Column(
+        child: ListView(
+          padding: EdgeInsets.zero,
           children: [
-            UserAccountsDrawerHeader(
+            DrawerHeader(
               decoration: const BoxDecoration(color: Color(0xFF1ABC9C)),
-              currentAccountPicture: const CircleAvatar(
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person, size: 40, color: Colors.black87),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.person, size: 40, color: Color(0xFF1ABC9C)),
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    "Time Room",
+                    style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
-              accountName: const Text("Usuário Exemplo"),
-              accountEmail: const Text("usuario@email.com"),
             ),
-
             ListTile(
               leading: const Icon(Icons.home),
               title: const Text("Home"),
               onTap: () {
-                _onItemTapped(0);
-                Navigator.pop(context);
+                Navigator.pop(context); // Fecha o Drawer
+                Navigator.pushReplacementNamed(context, '/dashboard');
               },
             ),
             ListTile(
@@ -117,42 +113,43 @@ class _DashboardPageState extends State<DashboardPage> {
               title: const Text("Reservas"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/reservas');
+                Navigator.pushReplacementNamed(context, '/reservas');
               },
             ),
             ListTile(
               leading: const Icon(Icons.meeting_room),
               title: const Text("Salas"),
               onTap: () {
-                _onItemTapped(2);
                 Navigator.pop(context);
+                Navigator.pushReplacementNamed(context, '/salas');
               },
             ),
             ListTile(
               leading: const Icon(Icons.person),
               title: const Text("Perfil"),
               onTap: () {
-                _onItemTapped(3);
                 Navigator.pop(context);
+                Navigator.pushReplacementNamed(context, '/perfil');
               },
             ),
-
-            const Spacer(),
-
             const Divider(),
             ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text("Logout", style: TextStyle(color: Colors.red)),
-              onTap: _onLogout,
+              leading: const Icon(Icons.logout),
+              title: const Text("Logout"),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: implementar logout com Supabase
+                Navigator.pushReplacementNamed(context, '/login');
+              },
             ),
           ],
         ),
       ),
 
-      // Conteúdo da tela muda conforme a aba
+      // Conteúdo da aba selecionada
       body: _pages[_selectedIndex],
 
-      // Botão de Nova Reserva
+      // Botão Nova Reserva
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.push(
@@ -169,7 +166,7 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
 
-      // Barra inferior
+      // BottomNavigationBar
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
