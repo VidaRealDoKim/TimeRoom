@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:apk/pages/nova_reserva.dart';
+import 'package:apk/pages/reserva.dart'; // página nova do colega
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -8,17 +9,6 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Center(
       child: Text("Página Home", style: TextStyle(fontSize: 20)),
-    );
-  }
-}
-
-class ReservasPage extends StatelessWidget {
-  const ReservasPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text("Minhas Reservas", style: TextStyle(fontSize: 20)),
     );
   }
 }
@@ -57,7 +47,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   final List<Widget> _pages = const [
     HomePage(),
-    ReservasPage(),
+    ReservasPage(), // nova versão
     SalasPage(),
     PerfilPage(),
   ];
@@ -71,13 +61,10 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // AppBar com botão do Drawer
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
       ),
-
-      // Drawer (menu lateral)
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -104,8 +91,8 @@ class _DashboardPageState extends State<DashboardPage> {
               leading: const Icon(Icons.home),
               title: const Text("Home"),
               onTap: () {
-                Navigator.pop(context); // Fecha o Drawer
-                Navigator.pushReplacementNamed(context, '/dashboard');
+                Navigator.pop(context);
+                setState(() => _selectedIndex = 0);
               },
             ),
             ListTile(
@@ -113,7 +100,7 @@ class _DashboardPageState extends State<DashboardPage> {
               title: const Text("Reservas"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, '/reservas');
+                setState(() => _selectedIndex = 1);
               },
             ),
             ListTile(
@@ -121,7 +108,7 @@ class _DashboardPageState extends State<DashboardPage> {
               title: const Text("Salas"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, '/salas');
+                setState(() => _selectedIndex = 2);
               },
             ),
             ListTile(
@@ -129,7 +116,7 @@ class _DashboardPageState extends State<DashboardPage> {
               title: const Text("Perfil"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, '/perfil');
+                setState(() => _selectedIndex = 3);
               },
             ),
             const Divider(),
@@ -145,11 +132,7 @@ class _DashboardPageState extends State<DashboardPage> {
           ],
         ),
       ),
-
-      // Conteúdo da aba selecionada
       body: _pages[_selectedIndex],
-
-      // Botão Nova Reserva
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.push(
@@ -165,8 +148,6 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-
-      // BottomNavigationBar
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
