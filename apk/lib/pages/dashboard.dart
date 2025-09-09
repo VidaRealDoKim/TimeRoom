@@ -71,16 +71,81 @@ class _DashboardPageState extends State<DashboardPage> {
     });
   }
 
+  void _onLogout() {
+    // Futuramente conectar com Supabase Auth
+    // Supabase.instance.client.auth.signOut();
+    Navigator.of(context).pushReplacementNamed('/login');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Logout realizado!")),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // AppBar
+      // AppBar com menu hamburguer
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.black87),
-          onPressed: () {},
+        iconTheme: const IconThemeData(color: Colors.black87),
+      ),
+
+      // Drawer lateral
+      drawer: Drawer(
+        child: Column(
+          children: [
+            UserAccountsDrawerHeader(
+              decoration: const BoxDecoration(color: Color(0xFF1ABC9C)),
+              currentAccountPicture: const CircleAvatar(
+                backgroundColor: Colors.white,
+                child: Icon(Icons.person, size: 40, color: Colors.black87),
+              ),
+              accountName: const Text("Usuário Exemplo"),
+              accountEmail: const Text("usuario@email.com"),
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text("Home"),
+              onTap: () {
+                _onItemTapped(0);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_today),
+              title: const Text("Reservas"),
+              onTap: () {
+                _onItemTapped(1);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.meeting_room),
+              title: const Text("Salas"),
+              onTap: () {
+                _onItemTapped(2);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text("Perfil"),
+              onTap: () {
+                _onItemTapped(3);
+                Navigator.pop(context);
+              },
+            ),
+
+            const Spacer(),
+
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text("Logout", style: TextStyle(color: Colors.red)),
+              onTap: _onLogout,
+            ),
+          ],
         ),
       ),
 
