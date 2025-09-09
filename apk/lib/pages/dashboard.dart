@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:apk/nova_reserva/nova_reserva.dart';
+import 'package:apk/pages/nova_reserva.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});

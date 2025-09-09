@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 // Importações principais do Flutter e pacotes externos
 // -----------------------------------------------------------------------------
-import 'package:apk/confirmacao_reserva/confirmacao_reserva.dart';
+import 'package:apk/pages/confirmacao_reserva.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -9,8 +9,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 // -----------------------------------------------------------------------------
 // Importações internas (telas principais do projeto)
 // -----------------------------------------------------------------------------
-import 'dashboard/dashboard.dart';
-import 'nova_reserva/nova_reserva.dart';
+import 'pages/dashboard.dart';
+import 'pages/nova_reserva.dart';
 
 // -----------------------------------------------------------------------------
 // Função principal do aplicativo
@@ -59,7 +59,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: true,
 
       // Define a tela inicial ao abrir o app
-      
+
       //futuramente vai para login.
       initialRoute: '/dashboard',
 
