@@ -148,7 +148,7 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 24.0),
                     TextButton(
                       onPressed: () {
-                        // TODO: Navegar para a tela de "Esqueci minha senha"
+                        Navigator.pushNamed(context, '/forgot');
                       },
                       child: Text(
                         'Esqueci minha senha',

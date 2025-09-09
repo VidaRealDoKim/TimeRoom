@@ -13,6 +13,7 @@ import 'pages/dashboard.dart';
 import 'pages/nova_reserva.dart';
 import './auth/login_page.dart';
 import './auth/registro_page.dart';
+import './auth/recuperacao_page.dart';
 
 // -----------------------------------------------------------------------------
 // Função principal do aplicativo
@@ -69,7 +70,7 @@ class MyApp extends StatelessWidget {
         // Telas Auth (ativar futuramente)
         '/login':   (context) => const LoginPage(),
         '/register':(context) => const RegisterPage(),
-        // '/forgot':  (context) => const ForgotPasswordPage(),
+        '/forgot':  (context) => const ForgotPasswordPage(),
 
         // Telas Principais
         '/dashboard': (context) => const DashboardPage(),
