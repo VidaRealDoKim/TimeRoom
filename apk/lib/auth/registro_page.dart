@@ -1,6 +1,5 @@
 // lib/auth/register.dart
 import 'package:flutter/material.dart';
-import 'package:apk/auth/login_page.dart'; // Importar para usar o TimeRoomLogo
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -38,7 +37,14 @@ class _RegisterPageState extends State<RegisterPage> {
               padding: const EdgeInsets.all(24.0),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(8.0),
+                borderRadius: BorderRadius.circular(12.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
               child: Form(
                 key: _formKey,
@@ -46,18 +52,23 @@ class _RegisterPageState extends State<RegisterPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // --- Logo ---
-                    const TimeRoomLogo(),
+                    Image.asset(
+                      'assets/logo.png',
+                      height: 100,
+                    ),
                     const SizedBox(height: 32.0),
 
                     // --- Campo Nome Completo ---
-                    const Text('Nome completo', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text('Nome completo',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8.0),
                     TextFormField(
                       controller: _nameController,
                       decoration: const InputDecoration(
                         hintText: 'Insira seu nome',
                         border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
+                        contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12.0),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -69,7 +80,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 16.0),
 
                     // --- Campo E-mail ---
-                    const Text('E-mail', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text('E-mail',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8.0),
                     TextFormField(
                       controller: _emailController,
@@ -77,7 +89,8 @@ class _RegisterPageState extends State<RegisterPage> {
                       decoration: const InputDecoration(
                         hintText: 'Insira seu e-mail',
                         border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
+                        contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12.0),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -89,7 +102,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 16.0),
 
                     // --- Campo Senha ---
-                    const Text('Senha', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text('Senha',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8.0),
                     TextFormField(
                       controller: _passwordController,
@@ -97,7 +111,8 @@ class _RegisterPageState extends State<RegisterPage> {
                       decoration: const InputDecoration(
                         hintText: 'Insira sua senha',
                         border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
+                        contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12.0),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -112,15 +127,17 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 16.0),
 
                     // --- Campo Confirme a Senha ---
-                    const Text('Confirme a senha', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text('Confirme a senha',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8.0),
                     TextFormField(
                       controller: _confirmPasswordController,
                       obscureText: true,
                       decoration: const InputDecoration(
-                        hintText: 'Insira sua senha',
+                        hintText: 'Repita sua senha',
                         border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
+                        contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12.0),
                       ),
                       validator: (value) {
                         if (value != _passwordController.text) {
@@ -141,14 +158,17 @@ class _RegisterPageState extends State<RegisterPage> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey[800],
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16.0),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8.0)
-                          )
+                        backgroundColor: Colors.teal[400],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
                       ),
-                      child: const Text('Cadastrar-se'),
+                      child: const Text(
+                        'Cadastrar-se',
+                        style: TextStyle(fontSize: 16),
+                      ),
                     ),
                     const SizedBox(height: 16.0),
 
@@ -157,7 +177,10 @@ class _RegisterPageState extends State<RegisterPage> {
                       onPressed: () {
                         Navigator.pop(context); // Volta para a tela anterior (Login)
                       },
-                      child: Text('Já possuo uma conta', style: TextStyle(color: Colors.grey[600])),
+                      child: Text(
+                        'Já possuo uma conta',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
                     ),
                   ],
                 ),

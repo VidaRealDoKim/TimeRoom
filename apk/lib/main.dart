@@ -12,6 +12,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'pages/dashboard.dart';
 import 'pages/nova_reserva.dart';
 import './auth/login_page.dart';
+import './auth/registro_page.dart';
 
 // -----------------------------------------------------------------------------
 // Função principal do aplicativo
@@ -67,7 +68,7 @@ class MyApp extends StatelessWidget {
       routes: {
         // Telas Auth (ativar futuramente)
         '/login':   (context) => const LoginPage(),
-        // '/register':(context) => const RegisterPage(),
+        '/register':(context) => const RegisterPage(),
         // '/forgot':  (context) => const ForgotPasswordPage(),
 
         // Telas Principais

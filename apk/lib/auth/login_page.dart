@@ -33,7 +33,14 @@ class _LoginPageState extends State<LoginPage> {
               padding: const EdgeInsets.all(24.0),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(8.0),
+                borderRadius: BorderRadius.circular(12.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
               child: Form(
                 key: _formKey,
@@ -41,11 +48,15 @@ class _LoginPageState extends State<LoginPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // --- Logo ---
-                    const TimeRoomLogo(),
+                    Image.asset(
+                      'assets/logo.png',
+                      height: 100,
+                    ),
                     const SizedBox(height: 32.0),
 
                     // --- Campo E-mail ---
-                    const Text('E-mail', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text('E-mail',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8.0),
                     TextFormField(
                       controller: _emailController,
@@ -53,7 +64,8 @@ class _LoginPageState extends State<LoginPage> {
                       decoration: const InputDecoration(
                         hintText: 'Insira seu e-mail',
                         border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
+                        contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12.0),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -65,7 +77,8 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 16.0),
 
                     // --- Campo Senha ---
-                    const Text('Senha', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text('Senha',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8.0),
                     TextFormField(
                       controller: _passwordController,
@@ -73,7 +86,8 @@ class _LoginPageState extends State<LoginPage> {
                       decoration: const InputDecoration(
                         hintText: 'Insira sua senha',
                         border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
+                        contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12.0),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -94,14 +108,17 @@ class _LoginPageState extends State<LoginPage> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey[800],
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16.0),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8.0)
-                          )
+                        backgroundColor: Colors.teal[400],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
                       ),
-                      child: const Text('Entrar'),
+                      child: const Text(
+                        'Entrar',
+                        style: TextStyle(fontSize: 16),
+                      ),
                     ),
                     const SizedBox(height: 24.0),
 
@@ -111,13 +128,19 @@ class _LoginPageState extends State<LoginPage> {
                         // TODO: Navegar para a tela de "Esqueci minha senha"
                         // Navigator.pushNamed(context, '/forgot');
                       },
-                      child: Text('Esqueci minha senha', style: TextStyle(color: Colors.grey[600])),
+                      child: Text(
+                        'Esqueci minha senha',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
                     ),
                     TextButton(
                       onPressed: () {
                         Navigator.pushNamed(context, '/register');
                       },
-                      child: Text('Criar conta', style: TextStyle(color: Colors.grey[600])),
+                      child: Text(
+                        'Criar conta',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
                     ),
                   ],
                 ),
@@ -126,32 +149,6 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
-    );
-  }
-}
-
-// Widget reutilizável para o Logo
-class TimeRoomLogo extends StatelessWidget {
-  const TimeRoomLogo({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Ícone que simula o design
-        Icon(Icons.watch_later_outlined, color: Colors.teal[400], size: 40),
-        const SizedBox(width: 8),
-        Text(
-          'TIME ROOM',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: Colors.teal[400],
-            letterSpacing: 1.5,
-          ),
-        ),
-      ],
     );
   }
 }
