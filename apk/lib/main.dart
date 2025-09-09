@@ -10,17 +10,13 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 // Importações internas (telas principais do projeto)
 // -----------------------------------------------------------------------------
 import 'dashboard/dashboard.dart';
-// import 'auth/login.dart';
-// import 'auth/register.dart';
-// import 'auth/forgot_password.dart';
 import 'nova_reserva/nova_reserva.dart';
-// import 'screens/perfil.dart';
-// import 'screens/salas_disponiveis.dart';
 
 // -----------------------------------------------------------------------------
 // Função principal do aplicativo
 // Inicializa configurações essenciais antes de rodar o app.
 // -----------------------------------------------------------------------------
+
 Future<void> main() async {
   // Garante que o Flutter esteja completamente inicializado
   WidgetsFlutterBinding.ensureInitialized();
@@ -60,24 +56,39 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       // Remove a faixa vermelha "DEBUG" no canto superior direito
-      debugShowCheckedModeBanner: false,
+      debugShowCheckedModeBanner: true,
 
       // Define a tela inicial ao abrir o app
+      
+      //futuramente vai para login.
       initialRoute: '/dashboard',
 
       // -----------------------------------------------------------------------
       // Rotas nomeadas do aplicativo
       // Cada rota mapeia para uma página específica.
       // -----------------------------------------------------------------------
+
       routes: {
-        '/dashboard': (context) => const DashboardPage(), // Tela Dashboard
-        '/confirmacao_reserva': (context) => const ConfirmacaoReservaScreen(),
+
+        //Telas Auth
         // '/login':   (context) => const LoginPage(),          // Tela de Login
         // '/register':(context) => const RegisterPage(),       // Tela de Registro
         // '/forgot':  (context) => const ForgotPasswordPage(), // Tela de Recuperação de Senha
-        '/nova_reserva': (context) => const NovaReservaPage(),
-        // '/perfil':  (context) => const PerfilPage(),
+
+
+        //Telas Principais
+        '/dashboard':    (context) => const DashboardPage(),    // Tela Dashboard
+        // '/home':      (context) => const HomePage(),         // Tela de Inicio
+        // '/reservas':  (context) => const ReservasPage(),     // Tela de Reservas
+        // '/salas':     (context) => const SalasPage(),        // Tela de Salas
+        // '/perfil':  (context)   => const PerfilPage(),       // Tela de Perfil
+
+        //Subtelas
+        '/nova_reserva': (context) => const NovaReservaPage(),  // Tela de Nova Reserva
+        '/confirmacao_reserva': (context) => const ConfirmacaoReservaScreen(),
         // '/salas_disponiveis': (context) => const SalasDisponiveisPage(),
+
+
       },
     );
   }
