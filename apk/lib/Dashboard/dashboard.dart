@@ -1,119 +1,81 @@
 import 'package:flutter/material.dart';
 import 'package:apk/nova_reserva/nova_reserva.dart';
-// import 'perfil.dart';
-// import 'salas_disponiveis.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> menuItems = [
-      {
-        "icon": Icons.add_circle,
-        "title": "Nova Reserva",
-        "route": const NovaReservaPage(),
-      },
-      {
-        "icon": Icons.meeting_room,
-        "title": "Minhas Reservas",
-        "route": null, // depois troca por tela real
-      },
-      {
-        "icon": Icons.apartment,
-        "title": "Salas Disponíveis",
-        "route": null, // depois troca por tela real
-      },
-      {
-        "icon": Icons.person,
-        "title": "Perfil",
-        "route": null, // depois troca por tela real
-      },
-    ];
-
     return Scaffold(
+      // AppBar simples estilo menu hamburguer
       appBar: AppBar(
-        title: const Text("Dashboard"),
-        centerTitle: true,
         elevation: 0,
-      ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 1,
+        backgroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Colors.black87),
+          onPressed: () {},
         ),
-        itemCount: menuItems.length,
-        itemBuilder: (context, index) {
-          return _DashboardCard(
-            icon: menuItems[index]["icon"],
-            title: menuItems[index]["title"],
-            onTap: () {
-              if (menuItems[index]["route"] != null) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => menuItems[index]["route"],
-                  ),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Clicou em ${menuItems[index]["title"]}")),
-                );
-              }
-            },
-          );
-        },
       ),
-    );
-  }
-}
 
-class _DashboardCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
-
-  const _DashboardCard({
-    required this.icon,
-    required this.title,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.deepPurple.shade50,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 6,
-              offset: const Offset(2, 2),
-            ),
-          ],
-        ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 50, color: Colors.deepPurple),
-            const SizedBox(height: 12),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            SizedBox(height: 8),
             Text(
-              title,
-              style: const TextStyle(
+              "Minhas Salas",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              "Reservas Atuais",
+              style: TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.deepPurple,
+                color: Colors.black54,
               ),
             ),
           ],
         ),
+      ),
+
+      // Botão flutuante estilo arredondado
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const NovaReservaPage()),
+          );
+        },
+        backgroundColor: Colors.black87,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text(
+          "NOVA RESERVA",
+          style: TextStyle(color: Colors.white),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+
+      // Barra inferior de navegação
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: 0, // índice da aba atual (0 = Home)
+        selectedItemColor: const Color(0xFF00796B),
+        unselectedItemColor: Colors.white,
+        backgroundColor: const Color(0xFF1ABC9C),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: "Reservas"),
+          BottomNavigationBarItem(icon: Icon(Icons.meeting_room), label: "Salas"),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil"),
+        ],
+        onTap: (index) {
+          // aqui você troca de página conforme a aba
+        },
       ),
     );
   }
