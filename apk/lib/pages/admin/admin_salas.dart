@@ -96,11 +96,78 @@ class _AdminSalasPageState extends State<AdminSalasPage> {
     }
   }
 
+  // ===================== EDIT =====================
+  Future<void> editSala(Map<String, dynamic> sala) async {
+    _nomeController.text = sala['nome'] ?? '';
+    _capacidadeController.text = sala['capacidade']?.toString() ?? '';
+    _localizacaoController.text = sala['localizacao'] ?? '';
+    _urlController.text = sala['url'] ?? '';
+
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text("Editar Sala"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              buildTextField(_nomeController, "Nome da Sala", Icons.meeting_room),
+              buildTextField(_capacidadeController, "Capacidade", Icons.people,
+                  keyboardType: TextInputType.number),
+              buildTextField(_localizacaoController, "Localização", Icons.place),
+              buildTextField(_urlController, "URL da Imagem", Icons.image),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1ABC9C),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () async {
+              final nome = _nomeController.text;
+              final capacidade = int.tryParse(_capacidadeController.text) ?? 0;
+              final localizacao = _localizacaoController.text;
+              final url = _urlController.text;
+
+              if (nome.isNotEmpty && capacidade > 0) {
+                try {
+                  await supabase.from('salas').update({
+                    'nome': nome,
+                    'capacidade': capacidade,
+                    'localizacao': localizacao,
+                    'url': url,
+                  }).eq('id', sala['id']);
+
+                  Navigator.pop(context);
+                  fetchSalas();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Sala atualizada com sucesso!")),
+                  );
+                } catch (e) {
+                  debugPrint("Erro ao editar sala: $e");
+                }
+              }
+            },
+            child: const Text("Salvar"),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ===================== BUILD =====================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100], // fundo claro
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: const Text(
           'Gerenciar Salas',
@@ -207,9 +274,10 @@ class _AdminSalasPageState extends State<AdminSalasPage> {
                         width: 60,
                         height: 60,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                        const Icon(Icons.image_not_supported,
-                            size: 50, color: Colors.grey),
+                        errorBuilder: (_, __, ___) => const Icon(
+                            Icons.image_not_supported,
+                            size: 50,
+                            color: Colors.grey),
                       ),
                     )
                         : const CircleAvatar(
@@ -230,10 +298,19 @@ class _AdminSalasPageState extends State<AdminSalasPage> {
                         Text('Localização: ${sala['localizacao']}'),
                       ],
                     ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () =>
-                          deleteSalaWithConfirm(sala['id'], sala['nome']),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.teal),
+                          onPressed: () => editSala(sala),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () =>
+                              deleteSalaWithConfirm(sala['id'], sala['nome']),
+                        ),
+                      ],
                     ),
                   ),
                 );
