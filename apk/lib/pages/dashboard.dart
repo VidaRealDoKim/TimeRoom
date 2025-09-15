@@ -1,139 +1,279 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'home.dart';
-import 'reserva.dart';
-import 'salas_disponiveis.dart';
-import 'nova_reserva.dart';
-import 'perfil.dart';
 
-class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+/// ---------------------------------------------------------------------------
+/// Página de Perfil do Usuário conectada ao Supabase
+/// ---------------------------------------------------------------------------
+/// Esta tela:
+/// - Busca os dados do usuário logado na tabela `profiles`
+/// - Permite editar nome e email via popup
+/// - Atualiza o Supabase ao salvar alterações
+/// - Possui switch de notificações (apenas local por enquanto)
+/// - Permite logout
+/// ---------------------------------------------------------------------------
+class PerfilPage extends StatefulWidget {
+  const PerfilPage({super.key});
 
   @override
-  State<DashboardPage> createState() => _DashboardPageState();
+  State<PerfilPage> createState() => _PerfilPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
-  int _selectedIndex = 0;
+class _PerfilPageState extends State<PerfilPage> {
+  // Instância do Supabase
+  final supabase = Supabase.instance.client;
 
-  final List<Widget> _pages = [
-    const HomePage(),
-    const ReservasPage(),
-    SalasDisponiveisPage(),
-    const PerfilPage(), // agora incluído
-  ];
+  /// Controla o estado do Switch de notificações.
+  bool _notificacoesAtivadas = true;
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
+  /// Dados do usuário logado
+  String _nomeUsuario = "";
+  String _emailUsuario = "";
+  String? _avatarUrl;
+
+  /// ID do usuário (UUID da tabela profiles)
+  String? _userId;
 
   @override
+  void initState() {
+    super.initState();
+    _carregarPerfil();
+  }
+
+  /// -------------------------------------------------------------------------
+  /// Carrega os dados do usuário logado a partir da tabela `profiles`
+  /// -------------------------------------------------------------------------
+  Future<void> _carregarPerfil() async {
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) return;
+
+      _userId = user.id;
+
+      final response = await supabase
+          .from('profiles')
+          .select('name, email, avatar_url')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (response != null) {
+        setState(() {
+          _nomeUsuario = response['name'] ?? '';
+          _emailUsuario = response['email'] ?? '';
+          _avatarUrl = response['avatar_url'];
+        });
+      }
+    } catch (e) {
+      debugPrint("Erro ao carregar perfil: $e");
+    }
+  }
+
+  /// -------------------------------------------------------------------------
+  /// Atualiza o perfil do usuário no Supabase
+  /// -------------------------------------------------------------------------
+  Future<void> _atualizarPerfil(String nome, String email) async {
+    if (_userId == null) return;
+
+    try {
+      await supabase.from('profiles').update({
+        'name': nome,
+        'email': email,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', _userId!);
+
+      setState(() {
+        _nomeUsuario = nome;
+        _emailUsuario = email;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Perfil atualizado com sucesso")),
+        );
+      }
+    } catch (e) {
+      debugPrint("Erro ao atualizar perfil: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erro ao atualizar perfil: $e")),
+        );
+      }
+    }
+  }
+
+  /// -------------------------------------------------------------------------
+  /// Faz logout do usuário
+  /// -------------------------------------------------------------------------
+  Future<void> _logout() async {
+    await supabase.auth.signOut();
+    if (mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Build da tela
+  // -------------------------------------------------------------------------
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
+    return _buildBody();
+  }
+
+  /// Constrói o corpo principal da tela de perfil.
+  Widget _buildBody() {
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      children: [
+        const SizedBox(height: 20),
+        _buildUserInfo(),
+        const SizedBox(height: 40),
+
+        _buildMenuOption(
+          icon: Icons.person_outline,
+          text: 'My Profile',
+          onTap: () => _abrirPopupEditarPerfil(context),
+        ),
+        _buildMenuOption(
+          icon: Icons.settings_outlined,
+          text: 'Settings',
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Abrir configurações...")),
+            );
+          },
+        ),
+        _buildNotificationOption(),
+        _buildMenuOption(
+          icon: Icons.logout,
+          text: 'Log Out',
+          onTap: _logout,
+        ),
+      ],
+    );
+  }
+
+  /// Seção com as informações básicas do usuário
+  Widget _buildUserInfo() {
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 35,
+          backgroundImage: _avatarUrl != null
+              ? NetworkImage(_avatarUrl!)
+              : const NetworkImage(
+              'https://ui-avatars.com/api/?name=User&background=1ABC9C&color=fff'),
+        ),
+        const SizedBox(width: 15),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(color: Color(0xFF1ABC9C)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, size: 40, color: Color(0xFF1ABC9C)),
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    "Time Room",
-                    style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                ],
+            Text(
+              _nomeUsuario.isNotEmpty ? _nomeUsuario : "Carregando...",
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text("Home"),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _selectedIndex = 0);
-              },
+            const SizedBox(height: 5),
+            Text(
+              _emailUsuario.isNotEmpty ? _emailUsuario : "Carregando...",
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+              ),
             ),
-            ListTile(
-              leading: const Icon(Icons.calendar_today),
-              title: const Text("Reservas"),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _selectedIndex = 1);
-              },
+          ],
+        )
+      ],
+    );
+  }
+
+  /// Item de menu
+  Widget _buildMenuOption({
+    required IconData icon,
+    required String text,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(icon, color: Colors.black54),
+      title: Text(text, style: const TextStyle(fontSize: 16)),
+      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+      onTap: onTap,
+    );
+  }
+
+  /// Switch de notificações
+  Widget _buildNotificationOption() {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: const Icon(Icons.notifications_outlined, color: Colors.black54),
+      title: const Text('Notification', style: TextStyle(fontSize: 16)),
+      trailing: Switch(
+        value: _notificacoesAtivadas,
+        onChanged: (bool value) {
+          setState(() {
+            _notificacoesAtivadas = value;
+          });
+        },
+        activeColor: const Color(0xFF1ABC9C),
+      ),
+    );
+  }
+
+  /// Popup para editar perfil
+  void _abrirPopupEditarPerfil(BuildContext context) {
+    final TextEditingController nomeController =
+    TextEditingController(text: _nomeUsuario);
+    final TextEditingController emailController =
+    TextEditingController(text: _emailUsuario);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: const Text("Editar Perfil"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nomeController,
+                decoration: const InputDecoration(
+                  labelText: "Nome",
+                  prefixIcon: Icon(Icons.person),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(
+                  labelText: "Email",
+                  prefixIcon: Icon(Icons.email),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: const Text("Cancelar"),
+              onPressed: () => Navigator.pop(context),
             ),
-            ListTile(
-              leading: const Icon(Icons.meeting_room),
-              title: const Text("Salas"),
-              onTap: () {
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1ABC9C),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text("Salvar"),
+              onPressed: () {
+                _atualizarPerfil(nomeController.text, emailController.text);
                 Navigator.pop(context);
-                setState(() => _selectedIndex = 2);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text("Perfil"),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _selectedIndex = 3);
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text("Logout"),
-              onTap: () async {
-                Navigator.pop(context);
-                await Supabase.instance.client.auth.signOut();
-                if (!mounted) return;
-                Navigator.pushReplacementNamed(context, '/login');
               },
             ),
           ],
-        ),
-      ),
-      body: _pages[_selectedIndex],
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const NovaReservaPage()),
-          );
-        },
-        backgroundColor: Colors.black87,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text(
-          "NOVA RESERVA",
-          style: TextStyle(color: Colors.white),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        selectedItemColor: const Color(0xFF00796B),
-        unselectedItemColor: Colors.white,
-        backgroundColor: const Color(0xFF1ABC9C),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: "Reservas"),
-          BottomNavigationBarItem(icon: Icon(Icons.meeting_room), label: "Salas"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil"),
-        ],
-      ),
+        );
+      },
     );
   }
 }

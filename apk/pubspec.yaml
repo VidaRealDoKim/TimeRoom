@@ -24,4 +24,8 @@ flutter:
   assets:
     - assets/logo.png
     - assets/logo3.png
+    - assets/logo_fundo.png
+    - assets/logo_ponteiro.png
+    - assets/circulo.png
+    - assets/group18.png
     - .env
