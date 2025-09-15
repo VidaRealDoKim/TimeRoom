@@ -1,3 +1,4 @@
+import 'package:apk/pages/salas_disponiveis.dart';
 import 'package:flutter/material.dart';
 import 'package:apk/pages/nova_reserva.dart';
 import 'package:apk/pages/reserva.dart'; // página nova do colega
@@ -9,17 +10,6 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Center(
       child: Text("Página Home", style: TextStyle(fontSize: 20)),
-    );
-  }
-}
-
-class SalasPage extends StatelessWidget {
-  const SalasPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text("Salas Disponíveis", style: TextStyle(fontSize: 20)),
     );
   }
 }
@@ -45,11 +35,11 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = const [
-    HomePage(),
-    ReservasPage(), // nova versão
-    SalasPage(),
-    PerfilPage(),
+  final List<Widget> _pages = [
+    const HomePage(),
+    const ReservasPage(), // nova versão
+    SalasDisponiveisPage(),
+    const PerfilPage(),
   ];
 
   void _onItemTapped(int index) {
