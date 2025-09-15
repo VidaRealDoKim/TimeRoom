@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'salas/admin_salas.dart';
 import 'usuarios/admin_usuarios.dart';
+import 'home/admin_home.dart';
 
 /// Instância do Supabase para autenticação e banco de dados
 final supabase = Supabase.instance.client;
@@ -26,13 +27,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   /// Lista de páginas (conteúdo exibido em cada aba)
   final List<Widget> _pages = const [
-    // Página inicial: visão geral
-    Center(
-      child: Text(
-        "Dashboard Corporativo",
-        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-      ),
-    ),
+    // Página inicial (nova página)
+    AdminHomePage(),
     // Página de salas administrativas
     AdminSalasPage(),
     // Página de usuários administrativos
@@ -137,7 +133,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
             // Itens do Drawer
             ListTile(
-              leading: const Icon(Icons.dashboard),
+              leading: const Icon(Icons.home),
               title: const Text("Dashboard"),
               onTap: () {
                 Navigator.pop(context);
@@ -186,8 +182,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         backgroundColor: const Color(0xFF1ABC9C),
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: "Dashboard",
+            icon: Icon(Icons.home),
+            label: "Início",
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.meeting_room),
