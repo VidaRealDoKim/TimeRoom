@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'admin_salas.dart';
-import 'admin_usuarios.dart';
+import 'salas/admin_salas.dart';
+import 'usuarios/admin_usuarios.dart';
 
 /// Instância do Supabase para autenticação e banco de dados
 final supabase = Supabase.instance.client;
