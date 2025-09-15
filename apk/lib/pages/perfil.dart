@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // -----------------------------------------------------------------------------
-// Widget da Tela de Perfil
-// Convertido para StatefulWidget para permitir interatividade, como o botão
-// de notificação e as ações de clique.
+// Tela de Perfil do Usuário (Com edição via popup incluindo avatar)
 // -----------------------------------------------------------------------------
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
@@ -13,111 +12,236 @@ class PerfilPage extends StatefulWidget {
 }
 
 class _PerfilPageState extends State<PerfilPage> {
-  // ---------------------------------------------------------------------------
-  // Estado do Widget (State)
-  // Variáveis que controlam os dados que podem mudar na tela.
-  // ---------------------------------------------------------------------------
+  final SupabaseClient _supabase = Supabase.instance.client;
 
-  // Variável para controlar o estado do Switch de notificações.
   bool _notificacoesAtivadas = true;
+  bool _loading = true;
 
-  // Índice da aba selecionada na barra de navegação inferior.
-  int _selectedIndex = 3; // Inicia na aba "Perfil"
+  String? _avatarUrl;
+  String? _name;
+  String? _email;
+
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _avatarController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserProfile();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _avatarController.dispose();
+    super.dispose();
+  }
 
   // ---------------------------------------------------------------------------
-  // Build (Construção da Interface)
+  // Busca o perfil do usuário logado
+  // ---------------------------------------------------------------------------
+  Future<void> _fetchUserProfile() async {
+    setState(() => _loading = true);
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return;
+
+      final response = await _supabase
+          .from('profiles')
+          .select()
+          .eq('id', userId)
+          .single();
+
+      if (response != null && mounted) {
+        setState(() {
+          _name = response['name'] ?? '';
+          _email = response['email'] ?? '';
+          _avatarUrl = response['avatar_url'];
+          _nameController.text = _name!;
+          _emailController.text = _email!;
+          _avatarController.text = _avatarUrl ?? '';
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao carregar perfil: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Atualiza perfil do usuário no Supabase
+  // ---------------------------------------------------------------------------
+  Future<void> _updateProfile() async {
+    setState(() => _loading = true);
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return;
+
+      final updates = {
+        'name': _nameController.text,
+        'email': _emailController.text,
+        'avatar_url': _avatarController.text,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      await _supabase.from('profiles').update(updates).eq('id', userId);
+
+      if (mounted) {
+        setState(() {
+          _name = _nameController.text;
+          _email = _emailController.text;
+          _avatarUrl = _avatarController.text;
+          _loading = false;
+        });
+
+        Navigator.of(context).pop(); // Fecha o popup
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Perfil atualizado com sucesso!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao atualizar perfil: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Abre o popup de edição de perfil
+  // ---------------------------------------------------------------------------
+  void _showEditProfileDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Editar Perfil'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _avatarController,
+                  decoration: const InputDecoration(
+                    labelText: 'URL da Imagem de Perfil',
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(labelText: 'Nome'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _emailController,
+                  decoration: const InputDecoration(labelText: 'E-mail'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: _updateProfile,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1ABC9C),
+              ),
+              child: const Text('Salvar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Build principal
   // ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    // A ESTRUTURA PRINCIPAL (SCAFFOLD, APPBAR, BOTTOMNAVBAR) FOI REMOVIDA
-    // POIS O DASHBOARD JÁ CONTROLA ISSO.
-    // Retornamos apenas o conteúdo que deve aparecer na tela.
-    return _buildBody();
-  }
+    if (_loading) return const Center(child: CircularProgressIndicator());
 
-  // A AppBar não é mais necessária nesta tela.
-  // PreferredSizeWidget _buildAppBar() { ... }
-
-  // Constrói o corpo principal da tela.
-  Widget _buildBody() {
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30),
       children: [
-        const SizedBox(height: 20),
-        // Seção com as informações do usuário (foto, nome, email).
         _buildUserInfo(),
         const SizedBox(height: 40),
-        // Lista de opções do menu.
         _buildMenuOption(
           icon: Icons.person_outline,
-          text: 'My Profile',
-          onTap: () {
-            // TODO: Navegar para a tela de edição de perfil.
-            print('Clicou em My Profile');
-          },
+          text: 'Editar Perfil',
+          onTap: _showEditProfileDialog,
         ),
         _buildMenuOption(
           icon: Icons.settings_outlined,
-          text: 'Settings',
-          onTap: () {
-            // TODO: Navegar para a tela de configurações.
-            print('Clicou em Settings');
-          },
+          text: 'Configurações',
+          onTap: () {},
         ),
-        // Opção de notificação com um Switch funcional.
         _buildNotificationOption(),
         _buildMenuOption(
           icon: Icons.logout,
           text: 'Log Out',
-          onTap: () {
-            // TODO: Implementar a lógica de logout (ex: Supabase).
-            print('Clicou em Log Out');
-            // Exemplo de como navegar para a tela de login após o logout.
-            // Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+          onTap: () async {
+            await _supabase.auth.signOut();
+            if (!mounted) return;
+            Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
           },
         ),
       ],
     );
   }
 
-  // Constrói a seção de informações do usuário.
+  // ---------------------------------------------------------------------------
+  // Informações do usuário
+  // ---------------------------------------------------------------------------
   Widget _buildUserInfo() {
     return Row(
       children: [
-        // Avatar do usuário.
-        const CircleAvatar(
+        CircleAvatar(
           radius: 35,
-          // Em um app real, esta imagem viria da URL do perfil do usuário.
-          backgroundImage: NetworkImage(
-              'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?q=80&w=2960&auto=format&fit=crop'),
+          backgroundImage: _avatarUrl != null && _avatarUrl!.isNotEmpty
+              ? NetworkImage(_avatarUrl!)
+              : const AssetImage('assets/default_avatar.png') as ImageProvider,
         ),
         const SizedBox(width: 15),
-        // Coluna com nome e email.
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text(
-              'Your Name', // Em um app real, viria do banco de dados.
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _name ?? '',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-            ),
-            SizedBox(height: 5),
-            Text(
-              'yourname@gmail.com', // Em um app real, viria do banco de dados.
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
+              const SizedBox(height: 5),
+              Text(
+                _email ?? '',
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
-            ),
-          ],
-        )
+            ],
+          ),
+        ),
       ],
     );
   }
 
-  // Constrói um item de opção padrão do menu.
   Widget _buildMenuOption({
     required IconData icon,
     required String text,
@@ -132,29 +256,18 @@ class _PerfilPageState extends State<PerfilPage> {
     );
   }
 
-  // Constrói o item de notificação, que é especial por ter um Switch.
   Widget _buildNotificationOption() {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: const Icon(Icons.notifications_outlined, color: Colors.black54),
-      title: const Text('Notification', style: TextStyle(fontSize: 16)),
-      // O trailing aqui é o Switch funcional.
+      title: const Text('Notificações', style: TextStyle(fontSize: 16)),
       trailing: Switch(
         value: _notificacoesAtivadas,
-        // O onChanged é chamado sempre que o usuário toca no Switch.
         onChanged: (bool value) {
-          // setState() avisa o Flutter para redesenhar a tela com o novo valor.
-          setState(() {
-            _notificacoesAtivadas = value;
-          });
+          setState(() => _notificacoesAtivadas = value);
         },
-        activeColor: const Color(0xFF1ABC9C), // Cor verde-água
+        activeColor: const Color(0xFF1ABC9C),
       ),
     );
   }
-
-// A BARRA DE NAVEGAÇÃO FOI REMOVIDA DAQUI.
-// O DASHBOARD JÁ TEM A SUA PRÓPRIA BARRA DE NAVEGAÇÃO.
-
 }
-
