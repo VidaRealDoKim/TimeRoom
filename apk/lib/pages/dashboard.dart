@@ -4,6 +4,17 @@ import 'package:apk/pages/nova_reserva.dart';
 import 'package:apk/pages/reserva.dart'; // página nova do colega
 import 'package:apk/pages/perfil.dart';
 
+import 'splash_screen.dart';
+
+class DashboardPage extends StatefulWidget {
+  const DashboardPage({super.key});
+
+
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+// APAGUE ESTE BLOCO DO SEU dashboard.dart
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -13,13 +24,6 @@ class HomePage extends StatelessWidget {
       child: Text("Página Home", style: TextStyle(fontSize: 20)),
     );
   }
-}
-
-class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
-
-  @override
-  State<DashboardPage> createState() => _DashboardPageState();
 }
 
 class _DashboardPageState extends State<DashboardPage> {

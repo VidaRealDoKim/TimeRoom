@@ -15,6 +15,7 @@ import './auth/login_page.dart';
 import './auth/registro_page.dart';
 import './auth/recuperacao_page.dart';
 import 'pages/admin/admin_dashboard.dart';
+import 'pages/splash_screen.dart';
 
 // -----------------------------------------------------------------------------
 // Função principal do aplicativo
@@ -62,7 +63,9 @@ class MyApp extends StatelessWidget {
 
       // Define a tela inicial ao abrir o app
       // Futuramente pode ser alterado para Login
-      initialRoute: '/login',
+      initialRoute: '/splash',
+      //initialRoute: '/login',
+
 
       // -----------------------------------------------------------------------
       // Rotas nomeadas do aplicativo
@@ -74,6 +77,7 @@ class MyApp extends StatelessWidget {
         '/forgot':  (context) => const ForgotPasswordPage(),
 
         // Telas Principais
+        '/splash': (context) => const SplashScreen(), // <-- Adicione esta linha
         '/dashboard': (context) => const DashboardPage(),
         // '/home':    (context) => const HomePage(),
         // '/reservas':(context) => const ReservasPage(),
