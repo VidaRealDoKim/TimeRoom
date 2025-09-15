@@ -2,6 +2,7 @@ import 'package:apk/pages/salas_disponiveis.dart';
 import 'package:flutter/material.dart';
 import 'package:apk/pages/nova_reserva.dart';
 import 'package:apk/pages/reserva.dart'; // página nova do colega
+import 'package:apk/pages/perfil.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -10,17 +11,6 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Center(
       child: Text("Página Home", style: TextStyle(fontSize: 20)),
-    );
-  }
-}
-
-class PerfilPage extends StatelessWidget {
-  const PerfilPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text("Meu Perfil", style: TextStyle(fontSize: 20)),
     );
   }
 }
