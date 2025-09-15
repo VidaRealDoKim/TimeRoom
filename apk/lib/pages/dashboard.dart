@@ -1,8 +1,10 @@
+import 'package:apk/pages/salas_disponiveis.dart';
 import 'package:flutter/material.dart';
 import 'package:apk/pages/nova_reserva.dart';
 import 'package:apk/pages/reserva.dart'; // página nova do colega
 import 'package:apk/pages/perfil.dart';
 
+import 'home.dart';
 import 'splash_screen.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -13,30 +15,6 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-// APAGUE ESTE BLOCO DO SEU dashboard.dart
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text("Página Home", style: TextStyle(fontSize: 20)),
-    );
-  }
-}
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'home.dart';
-import 'reserva.dart';
-import 'salas_disponiveis.dart';
-import 'nova_reserva.dart';
-import 'perfil.dart';
-
-class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
-
-  @override
-  State<DashboardPage> createState() => _DashboardPageState();
-}
 
 class _DashboardPageState extends State<DashboardPage> {
   int _selectedIndex = 0;
