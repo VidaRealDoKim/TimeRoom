@@ -1,227 +1,266 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Pacote para formatar datas, pode ser necessário adicionar ao pubspec.yaml
 
-// Classe que representa o modelo de dados para uma sala.
-// Usar uma classe ajuda a organizar melhor os dados.
-class Sala {
+// -----------------------------------------------------------------------------
+// Modelo de Dados (Data Model)
+// -----------------------------------------------------------------------------
+class SalaInfo {
   final String nome;
   final int capacidade;
-  final bool estaOcupada;
+  final String status;
 
-  Sala({
+  SalaInfo({
     required this.nome,
     required this.capacidade,
-    this.estaOcupada = false,
+    required this.status,
   });
 }
 
-// Widget principal da tela de listagem de salas.
-class SalasDisponiveisScreen extends StatelessWidget {
-   SalasDisponiveisScreen({super.key});
+// -----------------------------------------------------------------------------
+// Widget da Tela de Lista de Salas - Agora com Funcionalidades
+// -----------------------------------------------------------------------------
+class SalasDisponiveisPage extends StatefulWidget {
+  const SalasDisponiveisPage({super.key});
 
-  // Lista de dados de exemplo para as salas.
-  // Em um aplicativo real, esses dados viriam de uma API ou banco de dados.
-  final List<Sala> _listaDeSalas =  [
-    Sala(nome: 'Sala de reunião 01', capacidade: 12),
-    Sala(nome: 'Sala de reunião 02', capacidade: 40, estaOcupada: true),
-    Sala(nome: 'Sala de reunião 03', capacidade: 40),
-    Sala(nome: 'Sala de reunião 04', capacidade: 48),
-    Sala(nome: 'Sala de reunião 05', capacidade: 24),
-    Sala(nome: 'Sala de reunião 06', capacidade: 10),
+  @override
+  State<SalasDisponiveisPage> createState() => _SalasDisponiveisPageState();
+}
+
+class _SalasDisponiveisPageState extends State<SalasDisponiveisPage> {
+  // ---------------------------------------------------------------------------
+  // Estado do Widget (State) - Variáveis que controlam a tela
+  // ---------------------------------------------------------------------------
+
+  // Lista mestre com todas as salas. Nunca será modificada diretamente.
+  final List<SalaInfo> _todasAsSalas = [
+    SalaInfo(nome: 'Sala de Reunião 01', capacidade: 12, status: 'Disponível'),
+    SalaInfo(nome: 'Sala de Reunião 02', capacidade: 40, status: 'Ocupada'),
+    SalaInfo(nome: 'Sala de Reunião 03', capacidade: 40, status: 'Disponível'),
+    SalaInfo(nome: 'Sala de Reunião 04', capacidade: 48, status: 'Disponível'),
+    SalaInfo(nome: 'Sala de Reunião 05', capacidade: 24, status: 'Disponível'),
+    SalaInfo(nome: 'Sala de Brainstorm', capacidade: 8, status: 'Ocupada'),
+    SalaInfo(nome: 'Auditório Menor', capacidade: 50, status: 'Disponível'),
+    SalaInfo(nome: 'Sala de Entrevistas', capacidade: 4, status: 'Disponível'),
+    SalaInfo(nome: 'Sala de Foco 01', capacidade: 2, status: 'Ocupada'),
+    SalaInfo(nome: 'Sala de Foco 02', capacidade: 2, status: 'Disponível'),
   ];
 
+  // Lista que será exibida na tela. Ela muda de acordo com a busca.
+  List<SalaInfo> _listaFiltrada = [];
+
+  // Controlador para o campo de texto da busca.
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Ao iniciar a tela, a lista filtrada começa com todas as salas.
+    _listaFiltrada = _todasAsSalas;
+    // Adiciona um "ouvinte" ao campo de busca para filtrar a lista sempre que o texto mudar.
+    _searchController.addListener(_filtrarSalas);
+  }
+
+  @override
+  void dispose() {
+    // É uma boa prática remover o "ouvinte" e limpar o controlador para evitar vazamentos de memória.
+    _searchController.removeListener(_filtrarSalas);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Lógica de Funcionalidades
+  // ---------------------------------------------------------------------------
+
+  /// Filtra a lista de salas com base no texto digitado no campo de busca.
+  void _filtrarSalas() {
+    String query = _searchController.text.toLowerCase();
+    setState(() {
+      _listaFiltrada = _todasAsSalas.where((sala) {
+        final nomeSala = sala.nome.toLowerCase();
+        final capacidadeSala = sala.capacidade.toString();
+        // Retorna true se o nome da sala OU a capacidade contiverem o texto da busca.
+        return nomeSala.contains(query) || capacidadeSala.contains(query);
+      }).toList();
+    });
+  }
+
+  /// Abre um seletor de data e exibe a data selecionada.
+  Future<void> _selecionarData(BuildContext context) async {
+    final DateTime? dataEscolhida = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2030),
+    );
+
+    if (dataEscolhida != null) {
+      // Exibe uma mensagem rápida na parte inferior da tela com a data.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Data selecionada: ${DateFormat('dd/MM/yyyy').format(dataEscolhida)}'),
+          backgroundColor: const Color(0xFF16A085),
+        ),
+      );
+      // TODO: Adicionar lógica para filtrar as salas com base na data escolhida.
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Build (Construção da Interface)
+  // ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      // A barra de navegação inferior é um widget customizado.
-      bottomNavigationBar: _buildCustomBottomNav(),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 20),
-              // Cabeçalho da página com ícones de menu e calendário.
-              _buildHeader(),
-              const SizedBox(height: 30),
-              // Títulos da página.
-              const Text(
-                'Lista de salas',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Listagem de todas salas',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black54,
-                ),
-              ),
-              const SizedBox(height: 20),
-              // A lista de salas ocupa o espaço restante da tela.
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _listaDeSalas.length,
-                  itemBuilder: (context, index) {
-                    final sala = _listaDeSalas[index];
-                    // Constrói um card para cada sala da lista.
-                    return _buildSalaCard(sala);
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+      appBar: _buildAppBar(),
+      body: _buildBody(),
+      // A barra de navegação foi removida para ser controlada pelo Dashboard.
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      elevation: 0,
+      backgroundColor: Colors.white,
+      leading: const Icon(Icons.menu, color: Colors.black, size: 30),
+    );
+  }
+
+  Widget _buildBody() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildTitleSection(),
+          const SizedBox(height: 16),
+          _buildSearchBar(), // Campo de busca adicionado aqui
+          const SizedBox(height: 20),
+          _buildRoomsList(),
+        ],
       ),
     );
   }
 
-  // Constrói o cabeçalho.
-  Widget _buildHeader() {
+  Widget _buildTitleSection() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(Icons.menu, size: 30, color: Colors.black54),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.teal[400],
-            borderRadius: BorderRadius.circular(12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text('Lista de salas', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            SizedBox(height: 4),
+            Text('Listagem de todas salas', style: TextStyle(fontSize: 16, color: Colors.grey)),
+          ],
+        ),
+        // GestureDetector torna o container clicável.
+        GestureDetector(
+          onTap: () => _selecionarData(context), // Chama a função do calendário
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1ABC9C),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.calendar_today, color: Colors.white),
           ),
-          child: const Icon(Icons.calendar_today, color: Colors.white, size: 24),
         ),
       ],
     );
   }
 
-  // Constrói o card de uma sala.
-  Widget _buildSalaCard(Sala sala) {
+  /// Constrói o campo de texto para a busca.
+  Widget _buildSearchBar() {
+    return TextField(
+      controller: _searchController,
+      decoration: InputDecoration(
+        hintText: 'Buscar por nome ou capacidade...',
+        prefixIcon: const Icon(Icons.search, color: Colors.grey),
+        filled: true,
+        fillColor: Colors.grey[200],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  /// Constrói a lista de salas usando a lista filtrada.
+  Widget _buildRoomsList() {
+    return Expanded(
+      child: ListView.builder(
+        itemCount: _listaFiltrada.length, // Usa a lista filtrada
+        itemBuilder: (context, index) {
+          final sala = _listaFiltrada[index];
+          return _buildSalaCard(sala);
+        },
+      ),
+    );
+  }
+
+  /// Constrói o card de uma única sala.
+  Widget _buildSalaCard(SalaInfo sala) {
+    final bool isDisponivel = sala.status == 'Disponível';
+    final Color cardColor = isDisponivel ? const Color(0xFF1ABC9C) : Colors.red;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      // O GestureDetector permite adicionar uma ação de toque ao card.
-      child: GestureDetector(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: InkWell(
+        // Ao tocar no card, navega para a tela de reservas.
         onTap: () {
-          // Ação ao clicar no card (ex: navegar para detalhes da sala)
+          // Utiliza rotas nomeadas para uma navegação mais limpa.
+          // Certifique-se de ter a rota '/reservas' configurada no seu main.dart.
+          Navigator.pushNamed(context, '/reservas');
         },
         child: Container(
-          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            // A cor do card muda se a sala estiver ocupada.
-            color: sala.estaOcupada ? Colors.red[700] : Colors.teal[600],
-            borderRadius: BorderRadius.circular(16),
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             children: [
-              // Container do ícone da sala.
               Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                // Ícone que representa a sala. Pode ser trocado por uma imagem customizada.
-                child: Icon(
-                  Icons.workspaces_outline,
-                  color: Colors.grey[600],
-                  size: 32,
+                padding: const EdgeInsets.all(20),
+                child: const Icon(Icons.workspaces_outline, color: Colors.black54, size: 32),
+              ),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: const BorderRadius.only(
+                      topRight: Radius.circular(12),
+                      bottomRight: Radius.circular(12),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        sala.nome,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Sala que comporta ${sala.capacidade} pessoas!',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(width: 16),
-              // Coluna com os textos (nome e capacidade).
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      sala.nome,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Sala que comporta ${sala.capacidade} pessoas!',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                    ),
-                  ],
-                ),
-              )
             ],
           ),
         ),
       ),
-    );
-  }
-
-  // Constrói a barra de navegação inferior customizada.
-  Widget _buildCustomBottomNav() {
-    return Container(
-      height: 80,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 10,
-          )
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem(icon: Icons.home_outlined, label: 'Home'),
-          _buildNavItem(icon: Icons.calendar_today_outlined, label: 'Reservas'),
-          // O item "Salas" é o item ativo e tem um estilo diferente.
-          _buildNavItem(
-              icon: Icons.meeting_room, label: 'Salas', isActive: true),
-          _buildNavItem(icon: Icons.person_outline, label: 'Perfil'),
-        ],
-      ),
-    );
-  }
-
-  // Constrói um item da barra de navegação.
-  Widget _buildNavItem(
-      {required IconData icon, required String label, bool isActive = false}) {
-    // Se o item estiver ativo, ele tem um fundo circular destacado.
-    return isActive
-        ? Container(
-      padding: const EdgeInsets.all(16),
-      decoration:
-      BoxDecoration(shape: BoxShape.circle, color: Colors.teal[700]),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.white, size: 28),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white, fontSize: 12),
-          ),
-        ],
-      ),
-    )
-        : Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, color: Colors.grey[500], size: 28),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(color: Colors.grey[600], fontSize: 12),
-        ),
-      ],
     );
   }
 }
