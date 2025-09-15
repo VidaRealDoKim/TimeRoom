@@ -3,8 +3,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_salas.dart';
 import 'admin_usuarios.dart';
 
+/// Instância do Supabase para autenticação e banco de dados
 final supabase = Supabase.instance.client;
 
+/// Página principal do Painel Administrativo
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
 
@@ -13,15 +15,37 @@ class AdminDashboardPage extends StatefulWidget {
 }
 
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
+  /// Perfil do usuário logado (retirado da tabela "profiles")
   Map<String, dynamic>? profile;
+
+  /// Indicador de carregamento
   bool loading = true;
+
+  /// Índice da aba selecionada (para BottomNavigationBar)
+  int _selectedIndex = 0;
+
+  /// Lista de páginas (conteúdo exibido em cada aba)
+  final List<Widget> _pages = const [
+    // Página inicial: visão geral
+    Center(
+      child: Text(
+        "Dashboard Corporativo",
+        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      ),
+    ),
+    // Página de salas administrativas
+    AdminSalasPage(),
+    // Página de usuários administrativos
+    AdminUsuariosPage(),
+  ];
 
   @override
   void initState() {
     super.initState();
-    fetchProfile();
+    fetchProfile(); // Carrega perfil ao iniciar
   }
 
+  /// Busca os dados do perfil no Supabase
   Future<void> fetchProfile() async {
     final user = supabase.auth.currentUser;
     if (user == null) return;
@@ -43,145 +67,137 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     }
   }
 
+  /// Executa o logout do usuário
   Future<void> _logout(BuildContext context) async {
     await supabase.auth.signOut();
     if (!context.mounted) return;
     Navigator.pushReplacementNamed(context, '/login');
   }
 
+  /// Atualiza a aba selecionada no BottomNavigationBar
+  void _onItemTapped(int index) {
+    setState(() => _selectedIndex = index);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      // Barra superior
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1ABC9C),
         elevation: 0,
+        backgroundColor: Colors.white,
         title: loading
-            ? const Text("Carregando...")
-            : Row(
-          children: [
-            // Avatar
-            CircleAvatar(
-              backgroundImage: profile?['avatar_url'] != null
-                  ? NetworkImage(profile!['avatar_url'])
-                  : null,
-              backgroundColor: Colors.white,
-              child: profile?['avatar_url'] == null
-                  ? Text(
-                (profile?['name'] != null &&
-                    profile!['name'].isNotEmpty)
-                    ? profile!['name'][0].toUpperCase()
-                    : "?",
-                style: const TextStyle(
-                    color: Color(0xFF1ABC9C),
-                    fontWeight: FontWeight.bold),
-              )
-                  : null,
-            ),
-            const SizedBox(width: 10),
-            // Nome do usuário
-            Expanded(
-              child: Text(
-                profile?['name'] ?? "Usuário",
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            tooltip: 'Logout',
-            onPressed: () => _logout(context),
+            ? const Text(
+          "Carregando...",
+          style: TextStyle(color: Colors.black87),
+        )
+            : const Text(
+          "Painel Administrativo",
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
           ),
-        ],
+        ),
+        iconTheme: const IconThemeData(color: Colors.black87),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+
+      // Menu lateral (Drawer)
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
           children: [
-            Text(
-              "Bem-vindo, ${profile?['name'] ?? 'usuário'} 👋",
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
+            // Cabeçalho do Drawer
+            DrawerHeader(
+              decoration: const BoxDecoration(color: Color(0xFF1ABC9C)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  dashboardCard(
-                    context,
-                    title: "Salas",
-                    icon: Icons.meeting_room,
-                    color: Colors.teal,
-                    navigateTo: const AdminSalasPage(),
+                  const CircleAvatar(
+                    radius: 30,
+                    backgroundColor: Colors.white,
+                    child: Icon(
+                      Icons.admin_panel_settings,
+                      size: 40,
+                      color: Color(0xFF1ABC9C),
+                    ),
                   ),
-                  dashboardCard(
-                    context,
-                    title: "Usuários",
-                    icon: Icons.person,
-                    color: Colors.blueGrey,
-                    navigateTo: const AdminUsuariosPage(),
+                  const SizedBox(height: 12),
+                  Text(
+                    profile?['name'] ?? "Administrador",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget dashboardCard(BuildContext context,
-      {required String title,
-        required IconData icon,
-        required Color color,
-        required Widget navigateTo}) {
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => navigateTo),
+            // Itens do Drawer
+            ListTile(
+              leading: const Icon(Icons.dashboard),
+              title: const Text("Dashboard"),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _selectedIndex = 0);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.meeting_room),
+              title: const Text("Salas"),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _selectedIndex = 1);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text("Usuários"),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _selectedIndex = 2);
+              },
+            ),
+
+            const Divider(),
+
+            // Logout
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text("Logout"),
+              onTap: () => _logout(context),
+            ),
+          ],
+        ),
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.shade300,
-              blurRadius: 8,
-              offset: const Offset(2, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundColor: color.withOpacity(0.15),
-              child: Icon(icon, size: 36, color: color),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            )
-          ],
-        ),
+
+      // Corpo da página (conteúdo principal)
+      body: _pages[_selectedIndex],
+
+      // Barra inferior de navegação
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        selectedItemColor: const Color(0xFF00796B),
+        unselectedItemColor: Colors.white,
+        backgroundColor: const Color(0xFF1ABC9C),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: "Dashboard",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.meeting_room),
+            label: "Salas",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: "Usuários",
+          ),
+        ],
       ),
     );
   }
