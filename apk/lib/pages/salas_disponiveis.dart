@@ -1,23 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Pacote para formatar datas, pode ser necessário adicionar ao pubspec.yaml
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/intl.dart';
 
 // -----------------------------------------------------------------------------
-// Modelo de Dados (Data Model)
+// Modelo de Dados (Sala)
 // -----------------------------------------------------------------------------
 class SalaInfo {
+  final String id;
   final String nome;
   final int capacidade;
   final String status;
+  final String? url; // URL da imagem da sala
 
   SalaInfo({
+    required this.id,
     required this.nome,
     required this.capacidade,
     required this.status,
+    this.url,
   });
+
+  factory SalaInfo.fromMap(Map<String, dynamic> map) {
+    return SalaInfo(
+      id: map['id'],
+      nome: map['nome'],
+      capacidade: map['capacidade'] ?? 0,
+      status: 'Disponível', // default
+      url: map['url'],
+    );
+  }
 }
 
 // -----------------------------------------------------------------------------
-// Widget da Tela de Lista de Salas - Agora com Funcionalidades
+// Tela de Salas Disponíveis
 // -----------------------------------------------------------------------------
 class SalasDisponiveisPage extends StatefulWidget {
   const SalasDisponiveisPage({super.key});
@@ -27,65 +42,75 @@ class SalasDisponiveisPage extends StatefulWidget {
 }
 
 class _SalasDisponiveisPageState extends State<SalasDisponiveisPage> {
-  // ---------------------------------------------------------------------------
-  // Estado do Widget (State) - Variáveis que controlam a tela
-  // ---------------------------------------------------------------------------
+  final SupabaseClient _supabase = Supabase.instance.client;
 
-  // Lista mestre com todas as salas. Nunca será modificada diretamente.
-  final List<SalaInfo> _todasAsSalas = [
-    SalaInfo(nome: 'Sala de Reunião 01', capacidade: 12, status: 'Disponível'),
-    SalaInfo(nome: 'Sala de Reunião 02', capacidade: 40, status: 'Ocupada'),
-    SalaInfo(nome: 'Sala de Reunião 03', capacidade: 40, status: 'Disponível'),
-    SalaInfo(nome: 'Sala de Reunião 04', capacidade: 48, status: 'Disponível'),
-    SalaInfo(nome: 'Sala de Reunião 05', capacidade: 24, status: 'Disponível'),
-    SalaInfo(nome: 'Sala de Brainstorm', capacidade: 8, status: 'Ocupada'),
-    SalaInfo(nome: 'Auditório Menor', capacidade: 50, status: 'Disponível'),
-    SalaInfo(nome: 'Sala de Entrevistas', capacidade: 4, status: 'Disponível'),
-    SalaInfo(nome: 'Sala de Foco 01', capacidade: 2, status: 'Ocupada'),
-    SalaInfo(nome: 'Sala de Foco 02', capacidade: 2, status: 'Disponível'),
-  ];
-
-  // Lista que será exibida na tela. Ela muda de acordo com a busca.
+  List<SalaInfo> _todasAsSalas = [];
   List<SalaInfo> _listaFiltrada = [];
 
-  // Controlador para o campo de texto da busca.
   final TextEditingController _searchController = TextEditingController();
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    // Ao iniciar a tela, a lista filtrada começa com todas as salas.
-    _listaFiltrada = _todasAsSalas;
-    // Adiciona um "ouvinte" ao campo de busca para filtrar a lista sempre que o texto mudar.
     _searchController.addListener(_filtrarSalas);
+    _fetchSalas();
   }
 
   @override
   void dispose() {
-    // É uma boa prática remover o "ouvinte" e limpar o controlador para evitar vazamentos de memória.
     _searchController.removeListener(_filtrarSalas);
     _searchController.dispose();
     super.dispose();
   }
 
   // ---------------------------------------------------------------------------
-  // Lógica de Funcionalidades
+  // Busca as salas no Supabase
   // ---------------------------------------------------------------------------
+  Future<void> _fetchSalas() async {
+    setState(() => _loading = true);
 
-  /// Filtra a lista de salas com base no texto digitado no campo de busca.
+    try {
+      final response = await _supabase.from('salas').select().order('nome');
+
+      final List<SalaInfo> salas = (response as List<dynamic>)
+          .map((e) => SalaInfo.fromMap(e as Map<String, dynamic>))
+          .toList();
+
+      if (!mounted) return;
+
+      setState(() {
+        _todasAsSalas = salas;
+        _listaFiltrada = salas;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao carregar salas: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Filtra salas por nome ou capacidade
+  // ---------------------------------------------------------------------------
   void _filtrarSalas() {
-    String query = _searchController.text.toLowerCase();
+    final query = _searchController.text.toLowerCase();
+
     setState(() {
       _listaFiltrada = _todasAsSalas.where((sala) {
         final nomeSala = sala.nome.toLowerCase();
-        final capacidadeSala = sala.capacidade.toString();
-        // Retorna true se o nome da sala OU a capacidade contiverem o texto da busca.
-        return nomeSala.contains(query) || capacidadeSala.contains(query);
+        final capacidade = sala.capacidade.toString();
+        return nomeSala.contains(query) || capacidade.contains(query);
       }).toList();
     });
   }
 
-  /// Abre um seletor de data e exibe a data selecionada.
+  // ---------------------------------------------------------------------------
+  // Seleciona data (opcional)
+  // ---------------------------------------------------------------------------
   Future<void> _selecionarData(BuildContext context) async {
     final DateTime? dataEscolhida = await showDatePicker(
       context: context,
@@ -94,51 +119,38 @@ class _SalasDisponiveisPageState extends State<SalasDisponiveisPage> {
       lastDate: DateTime(2030),
     );
 
-    if (dataEscolhida != null) {
-      // Exibe uma mensagem rápida na parte inferior da tela com a data.
+    if (dataEscolhida != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Data selecionada: ${DateFormat('dd/MM/yyyy').format(dataEscolhida)}'),
           backgroundColor: const Color(0xFF16A085),
         ),
       );
-      // TODO: Adicionar lógica para filtrar as salas com base na data escolhida.
+      // TODO: filtrar salas por data escolhida
     }
   }
 
   // ---------------------------------------------------------------------------
-  // Build (Construção da Interface)
+  // Build
   // ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: _buildAppBar(),
-      body: _buildBody(),
-      // A barra de navegação foi removida para ser controlada pelo Dashboard.
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      elevation: 0,
-      backgroundColor: Colors.white,
-      leading: const Icon(Icons.menu, color: Colors.black, size: 30),
-    );
-  }
-
-  Widget _buildBody() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildTitleSection(),
-          const SizedBox(height: 16),
-          _buildSearchBar(), // Campo de busca adicionado aqui
-          const SizedBox(height: 20),
-          _buildRoomsList(),
-        ],
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildTitleSection(),
+            const SizedBox(height: 16),
+            _buildSearchBar(),
+            const SizedBox(height: 20),
+            _buildRoomsList(),
+          ],
+        ),
       ),
     );
   }
@@ -146,19 +158,10 @@ class _SalasDisponiveisPageState extends State<SalasDisponiveisPage> {
   Widget _buildTitleSection() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text('Lista de salas', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            SizedBox(height: 4),
-            Text('Listagem de todas salas', style: TextStyle(fontSize: 16, color: Colors.grey)),
-          ],
-        ),
-        // GestureDetector torna o container clicável.
+        const Text('Lista de salas', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         GestureDetector(
-          onTap: () => _selecionarData(context), // Chama a função do calendário
+          onTap: () => _selecionarData(context),
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -172,7 +175,6 @@ class _SalasDisponiveisPageState extends State<SalasDisponiveisPage> {
     );
   }
 
-  /// Constrói o campo de texto para a busca.
   Widget _buildSearchBar() {
     return TextField(
       controller: _searchController,
@@ -189,11 +191,12 @@ class _SalasDisponiveisPageState extends State<SalasDisponiveisPage> {
     );
   }
 
-  /// Constrói a lista de salas usando a lista filtrada.
   Widget _buildRoomsList() {
     return Expanded(
-      child: ListView.builder(
-        itemCount: _listaFiltrada.length, // Usa a lista filtrada
+      child: _listaFiltrada.isEmpty
+          ? const Center(child: Text('Nenhuma sala encontrada'))
+          : ListView.builder(
+        itemCount: _listaFiltrada.length,
         itemBuilder: (context, index) {
           final sala = _listaFiltrada[index];
           return _buildSalaCard(sala);
@@ -202,20 +205,19 @@ class _SalasDisponiveisPageState extends State<SalasDisponiveisPage> {
     );
   }
 
-  /// Constrói o card de uma única sala.
   Widget _buildSalaCard(SalaInfo sala) {
-    final bool isDisponivel = sala.status == 'Disponível';
+    final bool isDisponivel = sala.status.toLowerCase() == 'disponível';
     final Color cardColor = isDisponivel ? const Color(0xFF1ABC9C) : Colors.red;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: InkWell(
-        // Ao tocar no card, navega para a tela de reservas.
-        onTap: () {
-          // Utiliza rotas nomeadas para uma navegação mais limpa.
-          // Certifique-se de ter a rota '/reservas' configurada no seu main.dart.
-          Navigator.pushNamed(context, '/reservas');
-        },
+        onTap: isDisponivel
+            ? () {
+          if (!mounted) return;
+          Navigator.pushNamed(context, '/reservas', arguments: sala);
+        }
+            : null,
         child: Container(
           decoration: BoxDecoration(
             color: Colors.grey[200],
@@ -223,9 +225,26 @@ class _SalasDisponiveisPageState extends State<SalasDisponiveisPage> {
           ),
           child: Row(
             children: [
+              // Imagem da sala
               Container(
-                padding: const EdgeInsets.all(20),
-                child: const Icon(Icons.workspaces_outline, color: Colors.black54, size: 32),
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    bottomLeft: Radius.circular(12),
+                  ),
+                  image: sala.url != null
+                      ? DecorationImage(
+                    image: NetworkImage(sala.url!),
+                    fit: BoxFit.cover,
+                  )
+                      : null,
+                  color: sala.url == null ? Colors.black12 : null,
+                ),
+                child: sala.url == null
+                    ? const Icon(Icons.meeting_room, color: Colors.white, size: 40)
+                    : null,
               ),
               Expanded(
                 child: Container(
@@ -242,15 +261,11 @@ class _SalasDisponiveisPageState extends State<SalasDisponiveisPage> {
                     children: [
                       Text(
                         sala.nome,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Sala que comporta ${sala.capacidade} pessoas!',
+                        'Sala que comporta ${sala.capacidade} pessoas',
                         style: const TextStyle(color: Colors.white),
                       ),
                     ],
