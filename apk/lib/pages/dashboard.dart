@@ -1,4 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:apk/pages/nova_reserva.dart';
+import 'package:apk/pages/reserva.dart'; // página nova do colega
+import 'package:apk/pages/perfil.dart';
+
+import 'splash_screen.dart';
+
+class DashboardPage extends StatefulWidget {
+  const DashboardPage({super.key});
+
+
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+// APAGUE ESTE BLOCO DO SEU dashboard.dart
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text("Página Home", style: TextStyle(fontSize: 20)),
+    );
+  }
+}
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'home.dart';
 import 'reserva.dart';
@@ -18,9 +43,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
   final List<Widget> _pages = [
     const HomePage(),
-    const ReservasPage(),
+    const ReservasPage(), // nova versão
     SalasDisponiveisPage(),
-    const PerfilPage(), // agora incluído
+    const PerfilPage(),
   ];
 
   void _onItemTapped(int index) {
@@ -94,10 +119,9 @@ class _DashboardPageState extends State<DashboardPage> {
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text("Logout"),
-              onTap: () async {
+              onTap: () {
                 Navigator.pop(context);
-                await Supabase.instance.client.auth.signOut();
-                if (!mounted) return;
+                // TODO: implementar logout com Supabase
                 Navigator.pushReplacementNamed(context, '/login');
               },
             ),
