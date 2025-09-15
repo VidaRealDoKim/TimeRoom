@@ -1,4 +1,3 @@
-import 'package:apk/pages/salas_disponiveis.dart';
 import 'package:flutter/material.dart';
 import 'package:apk/pages/nova_reserva.dart';
 import 'package:apk/pages/reserva.dart'; // página nova do colega
@@ -24,6 +23,19 @@ class HomePage extends StatelessWidget {
       child: Text("Página Home", style: TextStyle(fontSize: 20)),
     );
   }
+}
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'home.dart';
+import 'reserva.dart';
+import 'salas_disponiveis.dart';
+import 'nova_reserva.dart';
+import 'perfil.dart';
+
+class DashboardPage extends StatefulWidget {
+  const DashboardPage({super.key});
+
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
 }
 
 class _DashboardPageState extends State<DashboardPage> {
