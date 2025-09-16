@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'home.dart';
-import 'reserva.dart';
+import 'reservar_salas.dart';
 import 'salas_disponiveis.dart';
 import 'nova_reserva.dart';
 import 'perfil.dart';
@@ -16,26 +16,37 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [
+  List<Widget> _pages() => [
     const HomePage(),
     const ReservasPage(),
-    SalasDisponiveisPage(),
-    const PerfilPage(), // agora incluído
+    const SalasDisponiveisPage(),
+    const PerfilPage(),
   ];
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    if (index == 2) {
+      // Botão central abre NovaReservaPage sem erros
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => NovaReservaPage(
+            sala: {'id': 0, 'nome': 'Sala Exemplo', 'capacidade': 10, 'localizacao': 'Local'},
+            dataSelecionada: DateTime.now(),
+          ),
+        ),
+      );
+    } else {
+      setState(() {
+        _selectedIndex = index > 2 ? index - 1 : index;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final pages = _pages();
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-      ),
+      appBar: AppBar(elevation: 0, backgroundColor: Colors.white),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -104,35 +115,40 @@ class _DashboardPageState extends State<DashboardPage> {
           ],
         ),
       ),
-      body: _pages[_selectedIndex],
-      floatingActionButton: FloatingActionButton.extended(
+      body: pages[_selectedIndex],
+      floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const NovaReservaPage()),
+            MaterialPageRoute(
+              builder: (_) => NovaReservaPage(
+                sala: {'id': 0, 'nome': 'Sala Exemplo', 'capacidade': 10, 'localizacao': 'Local'},
+                dataSelecionada: DateTime.now(),
+              ),
+            ),
           );
         },
         backgroundColor: Colors.black87,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text(
-          "NOVA RESERVA",
-          style: TextStyle(color: Colors.white),
-        ),
+        child: const Icon(Icons.add, size: 35, color: Colors.white),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        selectedItemColor: const Color(0xFF00796B),
-        unselectedItemColor: Colors.white,
-        backgroundColor: const Color(0xFF1ABC9C),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: "Reservas"),
-          BottomNavigationBarItem(icon: Icon(Icons.meeting_room), label: "Salas"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil"),
-        ],
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 6.0,
+        color: const Color(0xFF1ABC9C),
+        child: SizedBox(
+          height: 60,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              IconButton(icon: const Icon(Icons.home, color: Colors.white), onPressed: () => _onItemTapped(0)),
+              IconButton(icon: const Icon(Icons.calendar_today, color: Colors.white), onPressed: () => _onItemTapped(1)),
+              const SizedBox(width: 40),
+              IconButton(icon: const Icon(Icons.meeting_room, color: Colors.white), onPressed: () => _onItemTapped(3)),
+              IconButton(icon: const Icon(Icons.person, color: Colors.white), onPressed: () => _onItemTapped(4)),
+            ],
+          ),
+        ),
       ),
     );
   }

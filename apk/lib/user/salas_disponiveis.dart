@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'nova_reserva.dart'; // Import da tela de nova reserva
 
 // -----------------------------------------------------------------------------
 // Modelo de Dados (Sala)
@@ -49,6 +50,7 @@ class _SalasDisponiveisPageState extends State<SalasDisponiveisPage> {
 
   final TextEditingController _searchController = TextEditingController();
   bool _loading = true;
+  DateTime _dataSelecionada = DateTime.now();
 
   @override
   void initState() {
@@ -109,24 +111,26 @@ class _SalasDisponiveisPageState extends State<SalasDisponiveisPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // Seleciona data (opcional)
+  // Seleciona data
   // ---------------------------------------------------------------------------
   Future<void> _selecionarData(BuildContext context) async {
     final DateTime? dataEscolhida = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: _dataSelecionada,
       firstDate: DateTime.now(),
       lastDate: DateTime(2030),
     );
 
     if (dataEscolhida != null && mounted) {
+      setState(() {
+        _dataSelecionada = dataEscolhida;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Data selecionada: ${DateFormat('dd/MM/yyyy').format(dataEscolhida)}'),
           backgroundColor: const Color(0xFF16A085),
         ),
       );
-      // TODO: filtrar salas por data escolhida
     }
   }
 
@@ -215,7 +219,21 @@ class _SalasDisponiveisPageState extends State<SalasDisponiveisPage> {
         onTap: isDisponivel
             ? () {
           if (!mounted) return;
-          Navigator.pushNamed(context, '/reservas', arguments: sala);
+          // Ao clicar, abre a tela de nova reserva passando a sala e a data
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => NovaReservaPage(
+                sala: {
+                  'id': sala.id,
+                  'nome': sala.nome,
+                  'capacidade': sala.capacidade,
+                  'url': sala.url,
+                },
+                dataSelecionada: _dataSelecionada,
+              ),
+            ),
+          );
         }
             : null,
         child: Container(
