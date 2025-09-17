@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'admin_salas_itens.dart'; // <- Importa a tela de itens da sala
+import 'editar_sala.dart';
+import 'admin_salas_itens.dart'; // Tela de itens da sala
 
 final supabase = Supabase.instance.client;
 
+/// Tela de gerenciamento de salas em formato de lista (cards grandes), sem AppBar
 class AdminSalasPage extends StatefulWidget {
   const AdminSalasPage({super.key});
 
@@ -11,271 +13,182 @@ class AdminSalasPage extends StatefulWidget {
   State<AdminSalasPage> createState() => _AdminSalasPageState();
 }
 
-class _AdminSalasPageState extends State<AdminSalasPage> {
+class _AdminSalasPageState extends State<AdminSalasPage> with SingleTickerProviderStateMixin {
   List<Map<String, dynamic>> salas = [];
+  bool _loading = false;
+  late TabController _tabController;
+  Map<String, dynamic>? salaSelecionada;
 
-  final TextEditingController _nomeController = TextEditingController();
-  final TextEditingController _capacidadeController = TextEditingController();
-  final TextEditingController _localizacaoController = TextEditingController();
-  final TextEditingController _urlController = TextEditingController();
+  // ===================== CORES PADRONIZADAS =====================
+  final Color primaryColor = const Color(0xFF1ABC9C);
+  final Color secondaryColor = const Color(0xFF1ABC9C);
+  final Color bgColor = const Color(0xFFF5F5F5);
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     fetchSalas();
   }
 
-  /// ===================== FETCH SALAS =====================
+  // ===================== FETCH SALAS =====================
   Future<void> fetchSalas() async {
+    setState(() => _loading = true);
     try {
-      final response = await supabase
-          .from('salas')
-          .select()
-          .order('created_at', ascending: false);
-      setState(() => salas = List<Map<String, dynamic>>.from(response));
+      final response = await supabase.from('salas').select();
+      setState(() {
+        salas = List<Map<String, dynamic>>.from(response);
+      });
     } catch (e) {
-      debugPrint('Erro ao buscar salas: $e');
+      debugPrint("Erro ao buscar salas: $e");
+    } finally {
+      setState(() => _loading = false);
     }
   }
 
-  /// ===================== DELETE SALA =====================
-  Future<void> deleteSalaWithConfirm(String id, String nome) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Excluir Sala'),
-        content: Text('Tem certeza que deseja excluir a sala "$nome"?'),
-        actions: [
-          TextButton(
-            child: const Text('Cancelar'),
-            onPressed: () => Navigator.pop(context, false),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Excluir'),
-            onPressed: () => Navigator.pop(context, true),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      try {
-        await supabase.from('salas').delete().eq('id', id);
-        fetchSalas();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sala excluída com sucesso!')),
-        );
-      } catch (e) {
-        debugPrint('Erro ao deletar sala: $e');
-      }
+  // ===================== DELETE SALA =====================
+  Future<void> deleteSala(int salaId) async {
+    try {
+      await supabase.from('salas').delete().eq('id', salaId);
+      fetchSalas();
+    } catch (e) {
+      debugPrint("Erro ao deletar sala: $e");
     }
   }
 
-  /// ===================== UPDATE SALA =====================
-  Future<void> editSala(Map<String, dynamic> sala) async {
-    _nomeController.text = sala['nome'] ?? '';
-    _capacidadeController.text = sala['capacidade']?.toString() ?? '';
-    _localizacaoController.text = sala['localizacao'] ?? '';
-    _urlController.text = sala['url'] ?? '';
-
-    await showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Editar Sala"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              buildTextField(_nomeController, "Nome da Sala", Icons.meeting_room),
-              buildTextField(_capacidadeController, "Capacidade", Icons.people,
-                  keyboardType: TextInputType.number),
-              buildTextField(_localizacaoController, "Localização", Icons.place),
-              buildTextField(_urlController, "URL da Imagem", Icons.image),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancelar"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1ABC9C),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () async {
-              final nome = _nomeController.text;
-              final capacidade = int.tryParse(_capacidadeController.text) ?? 0;
-              final localizacao = _localizacaoController.text;
-              final url = _urlController.text;
-
-              if (nome.isNotEmpty && capacidade > 0) {
-                try {
-                  await supabase.from('salas').update({
-                    'nome': nome,
-                    'capacidade': capacidade,
-                    'localizacao': localizacao,
-                    'url': url,
-                  }).eq('id', sala['id']);
-
-                  Navigator.pop(context);
-                  fetchSalas();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Sala atualizada com sucesso!")),
-                  );
-                } catch (e) {
-                  debugPrint("Erro ao editar sala: $e");
-                }
-              }
-            },
-            child: const Text("Salvar"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// ===================== SALA CARD =====================
+  // ===================== CARD DE SALA =====================
   Widget buildSalaCard(Map<String, dynamic> sala) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade300,
-            blurRadius: 6,
-            offset: const Offset(2, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: sala['url'] != null && sala['url'].toString().isNotEmpty
-                ? Image.network(
-              sala['url'],
-              height: 150,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                height: 150,
-                color: Colors.grey[300],
-                child: const Icon(Icons.image_not_supported, size: 50),
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 4,
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Imagem ou ícone da sala
+            Container(
+              height: 180,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: primaryColor.withOpacity(0.2),
+                image: sala['url'] != null && sala['url'].isNotEmpty
+                    ? DecorationImage(
+                  image: NetworkImage(sala['url']),
+                  fit: BoxFit.cover,
+                )
+                    : null,
               ),
-            )
-                : Container(
-              height: 150,
-              color: Colors.grey[300],
-              child: const Icon(Icons.meeting_room, size: 50),
+              child: sala['url'] == null || sala['url'].isEmpty
+                  ? const Center(
+                child: Icon(Icons.meeting_room, size: 60, color: Color(0xFF1ABC9C)),
+              )
+                  : null,
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 12),
+            Text(
+              sala['nome'],
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "Capacidade: ${sala['capacidade']}",
+              style: const TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Text(
-                  sala['nome'] ?? '-',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+                // Editar sala
+                IconButton(
+                  icon: Icon(Icons.edit, color: primaryColor, size: 28),
+                  onPressed: () async {
+                    final updated = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EditarSalaPage(sala: sala),
+                      ),
+                    );
+                    if (updated == true) fetchSalas();
+                  },
                 ),
-                const SizedBox(height: 4),
-                Text('Capacidade: ${sala['capacidade']}', style: const TextStyle(fontSize: 14)),
-                Text('Localização: ${sala['localizacao'] ?? "-"}', style: const TextStyle(fontSize: 14)),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.teal),
-                      onPressed: () => editSala(sala),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.redAccent),
-                      onPressed: () => deleteSalaWithConfirm(sala['id'], sala['nome']),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.inventory_2, color: Colors.orange),
-                      tooltip: 'Gerenciar Itens',
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AdminSalaItensPage(sala: sala),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+                // Deletar sala
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.redAccent, size: 28),
+                  onPressed: () => deleteSala(sala['id']),
+                ),
+                // Itens da sala
+                IconButton(
+                  icon: Icon(Icons.inventory_2, color: secondaryColor, size: 28),
+                  onPressed: () {
+                    setState(() {
+                      salaSelecionada = sala;
+                      _tabController.index = 1;
+                    });
+                  },
                 ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  /// ===================== BUILD =====================
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: const Text(
-          'Gerenciar Salas',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: const Color(0xFF1ABC9C),
-        elevation: 0,
-      ),
-      body: salas.isEmpty
-          ? const Center(
-        child: Text(
-          "Nenhuma sala cadastrada",
-          style: TextStyle(fontSize: 16, color: Colors.grey),
-        ),
-      )
-          : ListView.builder(
-        padding: const EdgeInsets.all(12),
+  // ===================== LISTA DE SALAS =====================
+  Widget buildListaSalas() {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (salas.isEmpty) return const Center(child: Text("Nenhuma sala cadastrada"));
+
+    return RefreshIndicator(
+      onRefresh: fetchSalas,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: salas.length,
         itemBuilder: (context, index) {
-          final sala = salas[index];
-          return buildSalaCard(sala);
+          return buildSalaCard(salas[index]);
         },
       ),
     );
   }
 
-  /// ===================== TEXT FIELD =====================
-  Widget buildTextField(TextEditingController controller, String label, IconData icon,
-      {TextInputType keyboardType = TextInputType.text}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        decoration: InputDecoration(
-          prefixIcon: Icon(icon, color: const Color(0xFF1ABC9C)),
-          labelText: label,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+  // ===================== BUILD =====================
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: Column(
+        children: [
+          // Tabs para alternar entre salas e itens
+          TabBar(
+            controller: _tabController,
+            indicatorColor: secondaryColor,
+            labelColor: secondaryColor,
+            unselectedLabelColor: Colors.black54,
+            tabs: const [
+              Tab(icon: Icon(Icons.list), text: 'Salas'),
+              Tab(icon: Icon(Icons.inventory_2), text: 'Itens'),
+            ],
           ),
-          filled: true,
-          fillColor: Colors.grey[50],
-        ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                buildListaSalas(),
+                salaSelecionada != null
+                    ? AdminSalaItensPage(sala: salaSelecionada!)
+                    : const Center(
+                  child: Text(
+                    "Selecione uma sala na aba de Salas",
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
