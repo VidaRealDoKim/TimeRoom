@@ -10,7 +10,7 @@ import 'user/perfil.dart';
 import 'user/nova_reserva.dart';
 import 'user/confirmacao_reserva.dart';
 import 'admin/admin_dashboard.dart';
-import 'user/salas_disponiveis.dart';
+import 'user/favoritos.dart';
 import 'user/splash_screen.dart';
 
 // Auth
@@ -65,7 +65,7 @@ class MyApp extends StatelessWidget {
         '/splash': (context) => const SplashScreen(),
         '/dashboard': (context) => const DashboardPage(),
         '/perfil': (context) => const PerfilPage(),
-        '/salas': (context) => const SalasDisponiveisPage(),
+        '/salas': (context) => const SalasFavoritasPage(),
 
         // Telas Admin
         '/admindashboard': (context) => const AdminDashboardPage(),
