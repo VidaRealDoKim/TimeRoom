@@ -11,11 +11,13 @@ class AdminSalaItensPage extends StatefulWidget {
   State<AdminSalaItensPage> createState() => _AdminSalaItensPageState();
 }
 
-class _AdminSalaItensPageState extends State<AdminSalaItensPage> with SingleTickerProviderStateMixin {
+class _AdminSalaItensPageState extends State<AdminSalaItensPage>
+    with SingleTickerProviderStateMixin {
   List<Map<String, dynamic>> itensSala = [];
   List<Map<String, dynamic>> todosItens = [];
   Map<String, TextEditingController> quantidadeControllers = {};
   late TabController _tabController;
+  bool _loading = false;
 
   @override
   void initState() {
@@ -24,17 +26,15 @@ class _AdminSalaItensPageState extends State<AdminSalaItensPage> with SingleTick
     fetchItens();
   }
 
-  /// ===================== FETCH ITENS =====================
   Future<void> fetchItens() async {
+    setState(() => _loading = true);
     try {
-      // Itens da sala com join para pegar o nome
       final response = await supabase
           .from('salas_itens')
-          .select('item_id, quantidade, itens(nome)')
+          .select('item_id, quantidade, itens(nome, url)')
           .eq('sala_id', widget.sala['id']);
       itensSala = List<Map<String, dynamic>>.from(response);
 
-      // Todos os itens disponíveis
       final itensResponse = await supabase.from('itens').select();
       todosItens = List<Map<String, dynamic>>.from(itensResponse);
 
@@ -43,14 +43,13 @@ class _AdminSalaItensPageState extends State<AdminSalaItensPage> with SingleTick
         quantidadeControllers[item['item_id']] =
             TextEditingController(text: item['quantidade'].toString());
       }
-
-      setState(() {});
     } catch (e) {
       debugPrint('Erro ao buscar itens: $e');
+    } finally {
+      setState(() => _loading = false);
     }
   }
 
-  /// ===================== ADD ITEM =====================
   Future<void> addItem(String itemId) async {
     try {
       final exists = itensSala.any((i) => i['item_id'] == itemId);
@@ -61,16 +60,14 @@ class _AdminSalaItensPageState extends State<AdminSalaItensPage> with SingleTick
           'quantidade': 1,
         });
         fetchItens();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Item adicionado à sala!')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Item adicionado à sala!')));
       }
     } catch (e) {
       debugPrint('Erro ao adicionar item: $e');
     }
   }
 
-  /// ===================== REMOVE ITEM =====================
   Future<void> removeItem(String itemId) async {
     try {
       await supabase
@@ -79,15 +76,13 @@ class _AdminSalaItensPageState extends State<AdminSalaItensPage> with SingleTick
           .eq('sala_id', widget.sala['id'])
           .eq('item_id', itemId);
       fetchItens();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Item removido da sala!')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Item removido da sala!')));
     } catch (e) {
       debugPrint('Erro ao remover item: $e');
     }
   }
 
-  /// ===================== UPDATE QUANTIDADE =====================
   Future<void> updateQuantidade(String itemId, int quantidade) async {
     try {
       await supabase
@@ -97,85 +92,116 @@ class _AdminSalaItensPageState extends State<AdminSalaItensPage> with SingleTick
           .eq('item_id', itemId);
       FocusScope.of(context).unfocus();
       fetchItens();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Quantidade atualizada!')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Quantidade atualizada!')));
     } catch (e) {
       debugPrint('Erro ao atualizar quantidade: $e');
     }
   }
 
-  /// ===================== BUILD ITEM LIST =====================
   Widget buildItensDaSala() {
-    if (itensSala.isEmpty) {
-      return const Center(child: Text('Nenhum item nesta sala.'));
-    }
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (itensSala.isEmpty) return const Center(child: Text('Nenhum item nesta sala.'));
 
-    return ListView(
-      padding: const EdgeInsets.all(12),
-      children: itensSala.map((item) {
-        final nome = (item['itens'] != null) ? item['itens']['nome'] : 'Item';
-        final controller = quantidadeControllers[item['item_id']]!;
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: ListTile(
-            title: Text(nome),
-            trailing: SizedBox(
-              width: 120,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: controller,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+    return RefreshIndicator(
+      onRefresh: fetchItens,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: itensSala.length,
+        itemBuilder: (_, index) {
+          final item = itensSala[index];
+          final nome = item['itens'] != null ? item['itens']['nome'] : 'Item';
+          final url = item['itens'] != null ? item['itens']['url'] ?? '' : '';
+          final controller = quantidadeControllers[item['item_id']]!;
+          return Card(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            elevation: 3,
+            child: ListTile(
+              leading: url.isNotEmpty
+                  ? ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(url,
+                    width: 50, height: 50, fit: BoxFit.cover),
+              )
+                  : const Icon(Icons.inventory_2, size: 40, color: Colors.grey),
+              title: Text(nome, style: const TextStyle(fontWeight: FontWeight.w600)),
+              trailing: SizedBox(
+                width: 120,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: controller,
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 4, horizontal: 6),
+                        ),
+                        onSubmitted: (value) {
+                          final qtd = int.tryParse(value) ?? 1;
+                          updateQuantidade(item['item_id'], qtd);
+                        },
                       ),
-                      onSubmitted: (value) {
-                        final qtd = int.tryParse(value) ?? 1;
-                        updateQuantidade(item['item_id'], qtd);
-                      },
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.redAccent),
-                    onPressed: () => removeItem(item['item_id']),
-                  ),
-                ],
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.redAccent),
+                      onPressed: () => removeItem(item['item_id']),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      }).toList(),
+          );
+        },
+      ),
     );
   }
 
   Widget buildItensDisponiveis() {
-    final disponiveis = todosItens.where((item) => !itensSala.any((i) => i['item_id'] == item['id'])).toList();
+    final disponiveis = todosItens
+        .where((item) => !itensSala.any((i) => i['item_id'] == item['id']))
+        .toList();
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (disponiveis.isEmpty) return const Center(child: Text('Todos os itens já estão nesta sala.'));
 
-    if (disponiveis.isEmpty) {
-      return const Center(child: Text('Todos os itens já estão nesta sala.'));
-    }
-
-    return ListView(
-      padding: const EdgeInsets.all(12),
-      children: disponiveis.map((item) {
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: ListTile(
-            title: Text(item['nome']),
-            trailing: const Icon(Icons.add, color: Colors.green),
-            onTap: () => addItem(item['id']),
-          ),
-        );
-      }).toList(),
+    return RefreshIndicator(
+      onRefresh: fetchItens,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: disponiveis.length,
+        itemBuilder: (_, index) {
+          final item = disponiveis[index];
+          final url = item['url'] ?? '';
+          return Card(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            elevation: 3,
+            child: ListTile(
+              leading: url.isNotEmpty
+                  ? ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(url,
+                    width: 50, height: 50, fit: BoxFit.cover),
+              )
+                  : const Icon(Icons.inventory_2, size: 40, color: Colors.grey),
+              title: Text(item['nome'], style: const TextStyle(fontWeight: FontWeight.w600)),
+              trailing: IconButton(
+                icon: const Icon(Icons.add, color: Colors.green),
+                onPressed: () => addItem(item['id']),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
-  /// ===================== BUILD =====================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
