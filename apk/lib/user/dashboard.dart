@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'home.dart';
 import 'reservar_salas.dart';
-import 'salas_disponiveis.dart';
+import 'favoritos.dart';
 import 'nova_reserva.dart';
 import 'perfil.dart';
 
@@ -19,18 +19,22 @@ class _DashboardPageState extends State<DashboardPage> {
   List<Widget> _pages() => [
     const HomePage(),
     const ReservasPage(),
-    const SalasDisponiveisPage(),
+    const SalasFavoritasPage(),
     const PerfilPage(),
   ];
 
   void _onItemTapped(int index) {
     if (index == 2) {
-      // Botão central abre NovaReservaPage sem erros
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => NovaReservaPage(
-            sala: {'id': 0, 'nome': 'Sala Exemplo', 'capacidade': 10, 'localizacao': 'Local'},
+            sala: {
+              'id': 0,
+              'nome': 'Sala Exemplo',
+              'capacidade': 10,
+              'localizacao': 'Local'
+            },
             dataSelecionada: DateTime.now(),
           ),
         ),
@@ -46,7 +50,16 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     final pages = _pages();
     return Scaffold(
-      appBar: AppBar(elevation: 0, backgroundColor: Colors.white),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        centerTitle: true,
+        title: Image.asset(
+          'assets/LogoHorizontal.png',
+          height: 30,
+        ),
+        iconTheme: const IconThemeData(color: Colors.black), // Ícone do Drawer
+      ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -59,12 +72,16 @@ class _DashboardPageState extends State<DashboardPage> {
                   CircleAvatar(
                     radius: 30,
                     backgroundColor: Colors.white,
-                    child: Icon(Icons.person, size: 40, color: Color(0xFF1ABC9C)),
+                    child: Icon(Icons.person,
+                        size: 40, color: Color(0xFF1ABC9C)),
                   ),
                   SizedBox(height: 12),
                   Text(
                     "Time Room",
-                    style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -122,7 +139,12 @@ class _DashboardPageState extends State<DashboardPage> {
             context,
             MaterialPageRoute(
               builder: (_) => NovaReservaPage(
-                sala: {'id': 0, 'nome': 'Sala Exemplo', 'capacidade': 10, 'localizacao': 'Local'},
+                sala: {
+                  'id': 0,
+                  'nome': 'Sala Exemplo',
+                  'capacidade': 10,
+                  'localizacao': 'Local'
+                },
                 dataSelecionada: DateTime.now(),
               ),
             ),
@@ -141,11 +163,19 @@ class _DashboardPageState extends State<DashboardPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              IconButton(icon: const Icon(Icons.home, color: Colors.white), onPressed: () => _onItemTapped(0)),
-              IconButton(icon: const Icon(Icons.calendar_today, color: Colors.white), onPressed: () => _onItemTapped(1)),
+              IconButton(
+                  icon: const Icon(Icons.home, color: Colors.white),
+                  onPressed: () => _onItemTapped(0)),
+              IconButton(
+                  icon: const Icon(Icons.calendar_today, color: Colors.white),
+                  onPressed: () => _onItemTapped(1)),
               const SizedBox(width: 40),
-              IconButton(icon: const Icon(Icons.meeting_room, color: Colors.white), onPressed: () => _onItemTapped(3)),
-              IconButton(icon: const Icon(Icons.person, color: Colors.white), onPressed: () => _onItemTapped(4)),
+              IconButton(
+                  icon: const Icon(Icons.meeting_room, color: Colors.white),
+                  onPressed: () => _onItemTapped(3)),
+              IconButton(
+                  icon: const Icon(Icons.person, color: Colors.white),
+                  onPressed: () => _onItemTapped(4)),
             ],
           ),
         ),
