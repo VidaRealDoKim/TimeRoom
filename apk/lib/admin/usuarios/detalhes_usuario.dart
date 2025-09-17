@@ -3,8 +3,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 final supabase = Supabase.instance.client;
 
+/// Tela de detalhes e edição de um usuário
 class DetalhesUsuarioPage extends StatefulWidget {
   final String userId;
+
   const DetalhesUsuarioPage({super.key, required this.userId});
 
   @override
@@ -15,9 +17,15 @@ class _DetalhesUsuarioPageState extends State<DetalhesUsuarioPage> {
   Map<String, dynamic>? user;
   bool loading = true;
 
+  // Controllers para edição
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _roleController = TextEditingController();
+  final TextEditingController _cargoController = TextEditingController();
+
+  // ===================== CORES PADRONIZADAS =====================
+  final Color primaryColor = const Color(0xFF1ABC9C);
+  final Color secondaryColor = Colors.orange;
+  final Color bgColor = const Color(0xFFF5F5F5);
 
   @override
   void initState() {
@@ -25,6 +33,8 @@ class _DetalhesUsuarioPageState extends State<DetalhesUsuarioPage> {
     fetchUserDetails();
   }
 
+  // ===================== FETCH USER =====================
+  /// Busca detalhes do usuário na tabela profiles
   Future<void> fetchUserDetails() async {
     try {
       final response = await supabase
@@ -37,7 +47,7 @@ class _DetalhesUsuarioPageState extends State<DetalhesUsuarioPage> {
         user = response;
         _nameController.text = user?['name'] ?? '';
         _emailController.text = user?['email'] ?? '';
-        _roleController.text = user?['role'] ?? '';
+        _cargoController.text = user?['role'] ?? ''; // aqui é o cargo
         loading = false;
       });
     } catch (e) {
@@ -46,12 +56,14 @@ class _DetalhesUsuarioPageState extends State<DetalhesUsuarioPage> {
     }
   }
 
+  // ===================== SAVE CHANGES =====================
+  /// Salva alterações do usuário
   Future<void> saveChanges() async {
     try {
       await supabase.from('profiles').update({
         'name': _nameController.text,
         'email': _emailController.text,
-        'role': _roleController.text,
+        'role': _cargoController.text,
       }).eq('id', widget.userId);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -62,6 +74,8 @@ class _DetalhesUsuarioPageState extends State<DetalhesUsuarioPage> {
     }
   }
 
+  // ===================== RESET PASSWORD =====================
+  /// Envia link de redefinição de senha
   Future<void> resetPassword() async {
     try {
       // ⚠️ Isso exige service role key no backend
@@ -90,10 +104,10 @@ class _DetalhesUsuarioPageState extends State<DetalhesUsuarioPage> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: bgColor,
       appBar: AppBar(
         title: const Text("Detalhes do Usuário"),
-        backgroundColor: const Color(0xFF1ABC9C),
+        backgroundColor: primaryColor,
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -103,18 +117,25 @@ class _DetalhesUsuarioPageState extends State<DetalhesUsuarioPage> {
             // Avatar
             CircleAvatar(
               radius: 40,
-              backgroundColor: const Color(0xFFE0F2F1),
-              child: Text(
+              backgroundColor: primaryColor.withOpacity(0.2),
+              backgroundImage: user?['avatar_url'] != null &&
+                  user!['avatar_url'].isNotEmpty
+                  ? NetworkImage(user!['avatar_url'])
+                  : null,
+              child: user?['avatar_url'] == null ||
+                  user!['avatar_url'].isEmpty
+                  ? Text(
                 (user?['name']?.isNotEmpty == true
                     ? user!['name'][0]
                     : '?')
                     .toUpperCase(),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1ABC9C),
+                  color: primaryColor,
                 ),
-              ),
+              )
+                  : null,
             ),
             const SizedBox(height: 12),
             Text(
@@ -127,7 +148,7 @@ class _DetalhesUsuarioPageState extends State<DetalhesUsuarioPage> {
             // Campos editáveis
             buildTextField(_nameController, "Nome", Icons.person),
             buildTextField(_emailController, "Email", Icons.email),
-            buildTextField(_roleController, "Role", Icons.security),
+            buildTextField(_cargoController, "Cargo", Icons.security),
 
             const SizedBox(height: 20),
 
@@ -137,7 +158,7 @@ class _DetalhesUsuarioPageState extends State<DetalhesUsuarioPage> {
                 Expanded(
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1ABC9C),
+                      backgroundColor: primaryColor,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -151,7 +172,7 @@ class _DetalhesUsuarioPageState extends State<DetalhesUsuarioPage> {
                 Expanded(
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
+                      backgroundColor: secondaryColor,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -169,6 +190,7 @@ class _DetalhesUsuarioPageState extends State<DetalhesUsuarioPage> {
     );
   }
 
+  // ===================== BUILD TEXT FIELD =====================
   Widget buildTextField(
       TextEditingController controller, String label, IconData icon) {
     return Padding(
@@ -176,13 +198,13 @@ class _DetalhesUsuarioPageState extends State<DetalhesUsuarioPage> {
       child: TextField(
         controller: controller,
         decoration: InputDecoration(
-          prefixIcon: Icon(icon, color: const Color(0xFF1ABC9C)),
+          prefixIcon: Icon(icon, color: primaryColor),
           labelText: label,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           filled: true,
-          fillColor: Colors.grey[50],
+          fillColor: Colors.white,
         ),
       ),
     );
