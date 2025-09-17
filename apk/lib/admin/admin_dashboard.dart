@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'salas/admin_salas.dart';
-import 'salas/criar_sala.dart'; // <-- nova página de criação
+import 'criar/criar.dart'; // <-- nova página de criação
 import 'usuarios/admin_usuarios.dart';
 import 'home/admin_home.dart';
 
