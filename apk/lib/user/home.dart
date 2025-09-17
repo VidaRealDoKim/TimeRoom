@@ -18,6 +18,7 @@ class _HomePageState extends State<HomePage> {
   bool loading = true;
   List<Map<String, dynamic>> salas = [];
   List<Map<String, dynamic>> filteredSalas = [];
+  Set<String> favoritas = {}; // armazena ids das salas favoritas do usuário
 
   // Filtros
   String searchQuery = '';
@@ -31,9 +32,9 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     fetchSalasDisponiveis();
+    fetchFavoritas();
   }
 
-  /// Busca todas as salas no Supabase
   Future<void> fetchSalasDisponiveis() async {
     try {
       final data = await supabase.from('salas').select();
@@ -48,7 +49,51 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  /// Aplica filtros de pesquisa, capacidade e data
+  /// Busca salas favoritas do usuário logado
+  Future<void> fetchFavoritas() async {
+    try {
+      final userId = supabase.auth.currentUser?.id;
+      if (userId == null) return;
+
+      final data = await supabase
+          .from('salas_favoritas')
+          .select('sala_id')
+          .eq('usuario_id', userId);
+
+      setState(() {
+        favoritas = data.map<String>((item) => item['sala_id'] as String).toSet();
+      });
+    } catch (e) {
+      debugPrint("Erro ao carregar favoritas: $e");
+    }
+  }
+
+  /// Alterna favorito no Supabase
+  Future<void> toggleFavorito(String salaId) async {
+    try {
+      final userId = supabase.auth.currentUser?.id;
+      if (userId == null) return;
+
+      if (favoritas.contains(salaId)) {
+        // remover
+        await supabase
+            .from('salas_favoritas')
+            .delete()
+            .match({'usuario_id': userId, 'sala_id': salaId});
+        setState(() => favoritas.remove(salaId));
+      } else {
+        // adicionar
+        await supabase.from('salas_favoritas').insert({
+          'usuario_id': userId,
+          'sala_id': salaId,
+        });
+        setState(() => favoritas.add(salaId));
+      }
+    } catch (e) {
+      debugPrint("Erro ao favoritar: $e");
+    }
+  }
+
   Future<void> applyFilters() async {
     List<Map<String, dynamic>> tempFiltered = salas.where((sala) {
       final matchesName = sala['nome']
@@ -62,7 +107,6 @@ class _HomePageState extends State<HomePage> {
       return matchesName && matchesCapacity;
     }).toList();
 
-    // Se tiver data selecionada, checar reservas para aquela data
     if (dataReserva != null) {
       final reservasData = await supabase
           .from('reservas')
@@ -110,9 +154,6 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // -------------------------
-            // Filtros de pesquisa
-            // -------------------------
             const Text(
               "Filtrar Salas",
               style: TextStyle(
@@ -165,8 +206,7 @@ class _HomePageState extends State<HomePage> {
                         context: context,
                         initialDate: dataReserva ?? DateTime.now(),
                         firstDate: DateTime.now(),
-                        lastDate:
-                        DateTime.now().add(const Duration(days: 365)),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
                       );
                       if (picked != null) {
                         setState(() => dataReserva = picked);
@@ -190,9 +230,6 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             const SizedBox(height: 20),
-            // -------------------------
-            // Lista de salas disponíveis
-            // -------------------------
             const Text(
               "Salas Disponíveis",
               style: TextStyle(
@@ -218,73 +255,80 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// Card de cada sala, agora apenas abre a tela de detalhes
   Widget _buildSalaCard(Map<String, dynamic> sala) {
     final status = sala['ocupada'] == true ? "Ocupada" : "Livre";
     final statusColor = sala['ocupada'] == true ? Colors.red : Colors.green;
-    final imageUrl =
-        sala['url'] ?? "https://via.placeholder.com/150"; // Placeholder
+    final imageUrl = sala['url'] ?? "https://via.placeholder.com/150";
+    final isFavorita = favoritas.contains(sala['id']);
 
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => DetalhesSalaPage(
-              sala: sala,
-              dataSelecionada: dataReserva ?? DateTime.now(),
-            ),
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 3,
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(16)),
+                child: Image.network(
+                  imageUrl,
+                  height: 150,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      Container(height: 150, color: Colors.grey[300]),
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton(
+                  icon: Icon(
+                    isFavorita ? Icons.favorite : Icons.favorite_border,
+                    color: isFavorita ? Colors.red : Colors.white,
+                  ),
+                  onPressed: () => toggleFavorito(sala['id']),
+                ),
+              ),
+            ],
           ),
-        );
-      },
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        elevation: 3,
-        margin: const EdgeInsets.only(bottom: 16),
-        child: Column(
-          children: [
-            ClipRRect(
-              borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(16)),
-              child: Image.network(
-                imageUrl,
-                height: 150,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    Container(height: 150, color: Colors.grey[300]),
+          ListTile(
+            title: Text(
+              sala['nome'] ?? 'Sala',
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  fontFamily: 'Poppins'),
+            ),
+            subtitle: Text("Capacidade: ${sala['capacidade']}"),
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: statusColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                status,
+                style: const TextStyle(color: Colors.white),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    sala['nome'] ?? 'Sala',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        fontFamily: 'Poppins'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => DetalhesSalaPage(
+                    sala: sala,
+                    dataSelecionada: dataReserva ?? DateTime.now(),
+                    isFavorita: isFavorita,
+                    onToggleFavorito: () => toggleFavorito(sala['id']),
                   ),
-                  Container(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: statusColor,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      status,
-                      style: const TextStyle(
-                          color: Colors.white, fontFamily: 'Poppins'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -294,11 +338,17 @@ class _HomePageState extends State<HomePage> {
 class DetalhesSalaPage extends StatelessWidget {
   final Map<String, dynamic> sala;
   final DateTime dataSelecionada;
+  final bool isFavorita;
+  final VoidCallback onToggleFavorito;
 
-  const DetalhesSalaPage(
-      {super.key, required this.sala, required this.dataSelecionada});
+  const DetalhesSalaPage({
+    super.key,
+    required this.sala,
+    required this.dataSelecionada,
+    required this.isFavorita,
+    required this.onToggleFavorito,
+  });
 
-  /// Navega para NovaReservaPage e depois ConfirmacaoReservaPage
   void _reservarSala(BuildContext context) async {
     final result = await Navigator.push(
       context,
@@ -338,6 +388,15 @@ class DetalhesSalaPage extends StatelessWidget {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(
+              isFavorita ? Icons.favorite : Icons.favorite_border,
+              color: isFavorita ? Colors.red : Colors.black,
+            ),
+            onPressed: onToggleFavorito,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
