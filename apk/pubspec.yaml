@@ -29,4 +29,5 @@ flutter:
     - assets/logo_ponteiro.png
     - assets/circulo.png
     - assets/group18.png
+    - assets/LogoHorizontal.png
     - .env
