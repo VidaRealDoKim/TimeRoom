@@ -1,0 +1,264 @@
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart'; // ← pacote atualizado
+import 'home.dart';
+import 'reservar_salas.dart';
+import 'favoritos.dart';
+// import 'nova_reserva.dart';
+import 'perfil.dart';
+
+/// Instância global do Supabase
+final supabase = Supabase.instance.client;
+
+/// =======================
+/// Dashboard principal
+/// =======================
+class DashboardPage extends StatefulWidget {
+  const DashboardPage({super.key});
+
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  /// Aba atualmente selecionada
+  int _selectedIndex = 0;
+
+  /// Lista de páginas correspondentes às abas
+  final List<Widget> _pages = const [
+    HomePage(),
+    ReservasPage(),
+    SalasFavoritasPage(),
+    PerfilPage(),
+  ];
+
+  /// =======================
+  /// Alterar aba selecionada
+  /// =======================
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  /// =======================
+  /// Logout seguro
+  /// =======================
+  Future<void> _logout() async {
+    await Supabase.instance.client.auth.signOut();
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/login');
+  }
+
+  /// =======================
+  /// Abrir tela de QR Code
+  /// =======================
+  void _openQRScanner() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => QRViewPage(
+          onScan: (String result) {
+            // Aqui você pode tratar o resultado do QR Code
+            // Evite print em produção
+            Navigator.pop(context);
+          },
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      bottom: false,
+      child: Scaffold(
+        // =======================
+        // AppBar com logo centralizado
+        // =======================
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.white,
+          centerTitle: true,
+          title: Image.asset('assets/LogoHorizontal.png', height: 30),
+          iconTheme: const IconThemeData(color: Colors.black),
+        ),
+
+        // =======================
+        // Drawer lateral
+        // =======================
+        drawer: Drawer(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              DrawerHeader(
+                decoration: const BoxDecoration(color: Color(0xFF1ABC9C)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    CircleAvatar(
+                      radius: 30,
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.person, size: 40, color: Color(0xFF1ABC9C)),
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      "Time Room",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.home),
+                title: const Text("Home"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _onItemTapped(0);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.calendar_today),
+                title: const Text("Reservas"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _onItemTapped(1);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.star),
+                title: const Text("Salas"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _onItemTapped(2);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.person),
+                title: const Text("Perfil"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _onItemTapped(3);
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.logout),
+                title: const Text("Logout"),
+                onTap: _logout,
+              ),
+            ],
+          ),
+        ),
+
+        // =======================
+        // Conteúdo da aba atual
+        // =======================
+        body: _pages[_selectedIndex],
+
+        // =======================
+        // FAB central (QR Code)
+        // =======================
+        floatingActionButton: FloatingActionButton(
+          onPressed: _openQRScanner,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            width: 70,
+            height: 70,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0xFF1ABC9C),
+            ),
+            child: const Icon(Icons.qr_code_scanner, size: 32, color: Colors.white),
+          ),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+
+        // =======================
+        // BottomAppBar apenas com ícones
+        // =======================
+        bottomNavigationBar: BottomAppBar(
+          shape: const CircularNotchedRectangle(),
+          notchMargin: 6.0,
+          color: const Color(0xFF1ABC9C),
+          child: SafeArea(
+            child: SizedBox(
+              height: 60,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildNavItem(Icons.home, 0),
+                  _buildNavItem(Icons.calendar_today, 1),
+                  const SizedBox(width: 40),
+                  _buildNavItem(Icons.star, 2),
+                  _buildNavItem(Icons.person, 3),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// =======================
+  /// Cria item do BottomAppBar (somente ícone)
+  /// =======================
+  Widget _buildNavItem(IconData icon, int index) {
+    final isSelected = _selectedIndex == index;
+    return IconButton(
+      icon: Icon(icon, color: isSelected ? Colors.white : Colors.white70),
+      onPressed: () => _onItemTapped(index),
+      iconSize: 28,
+      padding: const EdgeInsets.all(0),
+      constraints: const BoxConstraints(),
+    );
+  }
+}
+
+/// =======================
+/// Tela de leitura de QR Code
+/// =======================
+class QRViewPage extends StatefulWidget {
+  final Function(String) onScan;
+
+  const QRViewPage({super.key, required this.onScan});
+
+  @override
+  State<QRViewPage> createState() => _QRViewPageState();
+}
+
+class _QRViewPageState extends State<QRViewPage> {
+  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
+  QRViewController? controller;
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    controller?.pauseCamera();
+    controller?.resumeCamera();
+  }
+
+  // OBS: dispose() removido, não é mais necessário
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Escanear QR Code')),
+      body: QRView(
+        key: qrKey,
+        onQRViewCreated: (QRViewController controller) {
+          this.controller = controller;
+          controller.scannedDataStream.listen((scanData) {
+            widget.onScan(scanData.code!);
+          });
+        },
+      ),
+    );
+  }
+}

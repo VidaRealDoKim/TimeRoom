@@ -13,6 +13,8 @@ dependencies:
   table_calendar: ^3.0.9
   supabase_flutter: ^2.5.4
   flutter_dotenv: ^5.2.0
+  intl: ^0.18.1
+  qr_code_scanner_plus: ^2.0.12
 
 dev_dependencies:
   flutter_test:
@@ -28,4 +30,5 @@ flutter:
     - assets/logo_ponteiro.png
     - assets/circulo.png
     - assets/group18.png
+    - assets/LogoHorizontal.png
     - .env

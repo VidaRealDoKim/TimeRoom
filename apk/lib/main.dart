@@ -1,6 +1,3 @@
-// -----------------------------------------------------------------------------
-// Importações principais do Flutter e pacotes externos
-// -----------------------------------------------------------------------------
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -8,14 +5,13 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 // -----------------------------------------------------------------------------
 // Importações internas (telas principais do projeto)
 // -----------------------------------------------------------------------------
-import 'pages/dashboard.dart';
-import 'pages/perfil.dart';
-import 'pages/nova_reserva.dart';
-import 'pages/confirmacao_reserva.dart';
-import 'pages/admin/admin_dashboard.dart';
-import 'pages/salas_disponiveis.dart';
-import 'pages/splash_screen.dart';
-
+import 'user/dashboard.dart';
+import 'user/perfil.dart';
+import 'user/nova_reserva.dart';
+import 'user/confirmacao_reserva.dart';
+import 'admin/admin_dashboard.dart';
+import 'user/favoritos.dart';
+import 'user/splash_screen.dart';
 
 // Auth
 import 'auth/login_page.dart';
@@ -61,22 +57,18 @@ class MyApp extends StatelessWidget {
       initialRoute: '/splash',
       routes: {
         // Telas Auth
-        '/login':    (context) => const LoginPage(),
+        '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
-        '/forgot':   (context) => const ForgotPasswordPage(),
+        '/forgot': (context) => const ForgotPasswordPage(),
 
         // Telas principais do usuário
-        '/splash':    (context) => const SplashScreen(),
+        '/splash': (context) => const SplashScreen(),
         '/dashboard': (context) => const DashboardPage(),
-        '/perfil':    (context) => const PerfilPage(),
-        '/salas':     (context) => const SalasDisponiveisPage(),
+        '/perfil': (context) => const PerfilPage(),
+        '/salas': (context) => const SalasFavoritasPage(),
 
         // Telas Admin
         '/admindashboard': (context) => const AdminDashboardPage(),
-
-        // Subtelas
-        '/nova_reserva':        (context) => const NovaReservaPage(),
-        '/confirmacao_reserva': (context) => const ConfirmacaoReservaScreen(),
       },
     );
   }
