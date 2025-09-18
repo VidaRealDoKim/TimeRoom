@@ -3,11 +3,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 final supabase = Supabase.instance.client;
 
-/// Tela para criar ou editar uma sala e gerenciar seus itens
-/// Caso [sala] seja null, a tela cria uma nova sala
+/// Tela para editar uma sala existente, gerenciar seus itens e horários
 class EditarSalaPage extends StatefulWidget {
-  final Map<String, dynamic>? sala;
-  const EditarSalaPage({super.key, this.sala});
+  final Map<String, dynamic> sala;
+
+  const EditarSalaPage({super.key, required this.sala});
 
   @override
   State<EditarSalaPage> createState() => _EditarSalaPageState();
@@ -21,94 +21,142 @@ class _EditarSalaPageState extends State<EditarSalaPage> {
   final TextEditingController _urlController = TextEditingController();
   final TextEditingController _statusController = TextEditingController();
 
-  // ===================== LISTAS DE ITENS =====================
-  List<Map<String, dynamic>> todosItens = []; // Todos os itens do banco
-  List<Map<String, dynamic>> itensSala = []; // Itens associados à sala
-  Map<String, TextEditingController> quantidadeControllers = {}; // Controladores de quantidade
+  // ===================== ITENS =====================
+  List<Map<String, dynamic>> todosItens = [];
+  List<Map<String, dynamic>> itensSala = [];
+  Map<String, TextEditingController> quantidadeControllers = {};
 
-  bool _loading = false; // Indica carregamento
+  // ===================== HORÁRIOS =====================
+  List<Map<String, dynamic>> horariosExistentes = []; // Apenas leitura
+  List<Map<String, TextEditingController>> horariosEdicao = []; // Para edição/adicionar
+
+  bool _loading = false;
 
   @override
   void initState() {
     super.initState();
     _initSala();
-    _urlController.addListener(() => setState(() {})); // Atualiza preview da imagem
   }
 
   // ===================== INICIALIZAÇÃO =====================
   Future<void> _initSala() async {
-    if (widget.sala != null) {
-      _nomeController.text = widget.sala!['nome'] ?? '';
-      _capacidadeController.text = widget.sala!['capacidade']?.toString() ?? '';
-      _localizacaoController.text = widget.sala!['localizacao'] ?? '';
-      _urlController.text = widget.sala!['url'] ?? '';
-      _statusController.text = widget.sala!['status'] ?? 'disponível';
-    }
+    // Inicializa os campos da sala
+    _nomeController.text = widget.sala['nome'] ?? '';
+    _capacidadeController.text = widget.sala['capacidade']?.toString() ?? '';
+    _localizacaoController.text = widget.sala['localizacao'] ?? '';
+    _urlController.text = widget.sala['url'] ?? '';
+    _statusController.text = widget.sala['status'] ?? 'disponível';
+
+    // Busca dados do banco
     await fetchTodosItens();
-    if (widget.sala != null) await fetchItensSala();
+    await fetchItensSala();
+    await fetchHorarios();
   }
 
-  /// Busca todos os itens cadastrados no banco
+  /// Busca todos os itens disponíveis
   Future<void> fetchTodosItens() async {
     try {
       final response = await supabase.from('itens').select();
-      setState(() => todosItens = List<Map<String, dynamic>>.from(response));
+      setState(() {
+        todosItens = List<Map<String, dynamic>>.from(response);
+      });
     } catch (e) {
       debugPrint("Erro ao buscar itens: $e");
     }
   }
 
-  /// Busca os itens já associados à sala
+  /// Busca itens associados à sala
   Future<void> fetchItensSala() async {
-    if (widget.sala == null) return;
     try {
       final response = await supabase
           .from('salas_itens')
-          .select('item_id, quantidade, itens(nome, url)')
-          .eq('sala_id', widget.sala!['id']);
+          .select('item_id, quantidade, itens(nome)')
+          .eq('sala_id', widget.sala['id']);
       itensSala = List<Map<String, dynamic>>.from(response);
+
       quantidadeControllers.clear();
       for (var item in itensSala) {
         quantidadeControllers[item['item_id']] =
             TextEditingController(text: item['quantidade']?.toString() ?? '1');
       }
+
       setState(() {});
     } catch (e) {
       debugPrint("Erro ao buscar itens da sala: $e");
     }
   }
 
+  /// Busca os horários existentes da sala
+  Future<void> fetchHorarios() async {
+    try {
+      final response = await supabase
+          .from('salas_horarios')
+          .select()
+          .eq('sala_id', widget.sala['id']);
+      final List<Map<String, dynamic>> data =
+      List<Map<String, dynamic>>.from(response);
+
+      // Horários apenas para exibição
+      horariosExistentes = data;
+
+      // Horários para edição/adicionar
+      horariosEdicao.clear();
+      for (var h in data) {
+        horariosEdicao.add({
+          'inicio': TextEditingController(text: h['horario_inicio'] ?? ''),
+          'fim': TextEditingController(text: h['horario_fim'] ?? ''),
+        });
+      }
+
+      setState(() {});
+    } catch (e) {
+      debugPrint("Erro ao buscar horários da sala: $e");
+    }
+  }
+
   // ===================== ADICIONAR/REMOVER ITENS =====================
-  /// Adiciona um item existente à sala
   void addItem(Map<String, dynamic> item) {
     final exists = itensSala.any((i) => i['item_id'] == item['id']);
-    if (exists) return; // Não adiciona duplicado
+    if (exists) return;
     setState(() {
       itensSala.add({
         'item_id': item['id'],
         'quantidade': 1,
-        'itens': {'nome': item['nome'], 'url': item['url'] ?? ''},
+        'itens': {'nome': item['nome']},
       });
       quantidadeControllers[item['id']] = TextEditingController(text: '1');
     });
   }
 
-  /// Remove item da sala
   void removeItem(Map<String, dynamic> item) async {
-    if (widget.sala != null) {
-      try {
-        await supabase
-            .from('salas_itens')
-            .delete()
-            .eq('sala_id', widget.sala!['id'])
-            .eq('item_id', item['item_id']);
-      } catch (e) {
-        debugPrint("Erro ao remover item: $e");
-      }
+    try {
+      await supabase
+          .from('salas_itens')
+          .delete()
+          .eq('sala_id', widget.sala['id'])
+          .eq('item_id', item['item_id']);
+      quantidadeControllers.remove(item['item_id']);
+      itensSala.removeWhere((i) => i['item_id'] == item['item_id']);
+      setState(() {});
+    } catch (e) {
+      debugPrint("Erro ao remover item: $e");
     }
-    quantidadeControllers.remove(item['item_id']);
-    itensSala.removeWhere((i) => i['item_id'] == item['item_id']);
-    setState(() {});
+  }
+
+  // ===================== ADICIONAR/REMOVER HORÁRIOS =====================
+  void addHorario() {
+    setState(() {
+      horariosEdicao.add({
+        'inicio': TextEditingController(),
+        'fim': TextEditingController(),
+      });
+    });
+  }
+
+  void removeHorario(int index) {
+    setState(() {
+      horariosEdicao.removeAt(index);
+    });
   }
 
   // ===================== SALVAR SALA =====================
@@ -120,97 +168,66 @@ class _EditarSalaPageState extends State<EditarSalaPage> {
     final status = _statusController.text.trim();
 
     if (nome.isEmpty || capacidade <= 0) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Preencha os campos obrigatórios!")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Preencha os campos obrigatórios!")),
+      );
       return;
     }
 
     setState(() => _loading = true);
-    try {
-      String salaId = widget.sala?['id'];
-      if (widget.sala != null) {
-        await supabase.from('salas').update({
-          'nome': nome,
-          'capacidade': capacidade,
-          'localizacao': localizacao,
-          'url': url,
-          'status': status,
-        }).eq('id', salaId);
-      } else {
-        final response = await supabase.from('salas').insert({
-          'nome': nome,
-          'capacidade': capacidade,
-          'localizacao': localizacao.isEmpty ? null : localizacao,
-          'url': url.isEmpty ? null : url,
-          'status': status,
-        }).select().single();
-        salaId = response['id'];
-      }
 
-      // Atualiza itens da sala
+    try {
+      // ===================== ATUALIZA DADOS DA SALA =====================
+      await supabase.from('salas').update({
+        'nome': nome,
+        'capacidade': capacidade,
+        'localizacao': localizacao,
+        'url': url,
+        'status': status,
+      }).eq('id', widget.sala['id']);
+
+      // ===================== ATUALIZA ITENS =====================
       for (var item in itensSala) {
         final quantidade =
-            int.tryParse(quantidadeControllers[item['item_id']]?.text ?? '1') ?? 1;
+            int.tryParse(quantidadeControllers[item['item_id']]?.text ?? '1') ??
+                1;
         await supabase.from('salas_itens').upsert({
-          'sala_id': salaId,
+          'sala_id': widget.sala['id'],
           'item_id': item['item_id'],
           'quantidade': quantidade,
         });
       }
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Sala salva com sucesso!")));
+      // ===================== ATUALIZA HORÁRIOS =====================
+      // Apaga todos os horários antigos
+      await supabase.from('salas_horarios').delete().eq('sala_id', widget.sala['id']);
+
+      // Insere os horários novos/editados
+      for (var h in horariosEdicao) {
+        final inicio = h['inicio']!.text.trim();
+        final fim = h['fim']!.text.trim();
+        if (inicio.isEmpty || fim.isEmpty) continue;
+
+        await supabase.from('salas_horarios').insert({
+          'sala_id': widget.sala['id'],
+          'horario_inicio': inicio,
+          'horario_fim': fim,
+        });
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Sala atualizada com sucesso!")),
+      );
+
       Navigator.pop(context, true);
     } catch (e) {
-      debugPrint("Erro ao salvar sala: $e");
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Erro: $e")));
+      debugPrint("Erro ao atualizar sala: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Erro: $e")),
+      );
     } finally {
       setState(() => _loading = false);
     }
-  }
-
-  // ===================== CRIAR ITEM NOVO =====================
-  /// Cria novo item diretamente da tela de sala
-  Future<void> _criarItem() async {
-    final nomeController = TextEditingController();
-    final urlController = TextEditingController();
-
-    await showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Criar Item"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nomeController, decoration: const InputDecoration(labelText: "Nome")),
-            TextField(controller: urlController, decoration: const InputDecoration(labelText: "URL da Imagem")),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
-          ElevatedButton(
-            onPressed: () async {
-              final nome = nomeController.text.trim();
-              final url = urlController.text.trim();
-              if (nome.isEmpty) return;
-
-              final response = await supabase.from('itens').insert({
-                'nome': nome,
-                'url': url.isEmpty ? null : url,
-              }).select().single();
-
-              setState(() {
-                todosItens.add(response);
-                addItem(response); // Adiciona automaticamente à sala
-              });
-
-              Navigator.pop(context);
-            },
-            child: const Text("Salvar"),
-          ),
-        ],
-      ),
-    );
   }
 
   // ===================== BUILD =====================
@@ -218,93 +235,117 @@ class _EditarSalaPageState extends State<EditarSalaPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.sala != null ? "Editar Sala" : "Nova Sala"),
+        title: const Text("Editar Sala"),
         backgroundColor: const Color(0xFF1ABC9C),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ====== IMAGEM DA SALA ======
-            GestureDetector(
-              onTap: () async {
-                await showDialog(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: const Text("Editar URL da Imagem"),
-                    content: TextField(
-                      controller: _urlController,
-                      decoration: const InputDecoration(labelText: "URL da Imagem"),
-                    ),
-                    actions: [
-                      TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
-                      ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text("Salvar")),
-                    ],
+            // ====== CAMPOS DA SALA ======
+            buildTextField(
+                _nomeController, "Nome da Sala", Icons.meeting_room),
+            buildTextField(_capacidadeController, "Capacidade", Icons.people,
+                keyboardType: TextInputType.number),
+            buildTextField(_localizacaoController, "Localização", Icons.place),
+            buildTextField(_urlController, "URL da Imagem", Icons.image),
+            buildTextField(_statusController, "Status", Icons.info),
+            const SizedBox(height: 16),
+
+            // ====== HORÁRIOS EXISTENTES (LISTA) ======
+            const Text("Horários Atuais da Sala",
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            horariosExistentes.isEmpty
+                ? const Text("Nenhum horário cadastrado.")
+                : Column(
+              children: horariosExistentes
+                  .map((h) => ListTile(
+                title: Text(
+                    "${h['horario_inicio']} - ${h['horario_fim']}"),
+                leading: const Icon(Icons.access_time),
+              ))
+                  .toList(),
+            ),
+            const Divider(height: 32),
+
+            // ====== CRIAÇÃO / EDIÇÃO DE HORÁRIOS ======
+            const Text("Adicionar / Editar Horários",
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            ...horariosEdicao.asMap().entries.map((entry) {
+              final index = entry.key;
+              final h = entry.value;
+              return Row(
+                children: [
+                  Expanded(
+                    child: buildTextField(
+                        h['inicio']!, "Início (HH:MM)", Icons.access_time),
                   ),
-                );
-              },
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: _urlController.text.isNotEmpty
-                    ? Image.network(_urlController.text,
-                    height: 200, width: double.infinity, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 100))
-                    : Container(
-                  height: 200,
-                  width: double.infinity,
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.image, size: 100, color: Colors.grey),
-                ),
-              ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: buildTextField(
+                        h['fim']!, "Fim (HH:MM)", Icons.access_time),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.redAccent),
+                    onPressed: () => removeHorario(index),
+                  ),
+                ],
+              );
+            }).toList(),
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
+              onPressed: addHorario,
+              icon: const Icon(Icons.add),
+              label: const Text("Adicionar Horário"),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1ABC9C)),
             ),
             const SizedBox(height: 16),
 
-            // ====== CAMPOS DA SALA ======
-            buildTextField(_nomeController, "Nome da Sala", Icons.meeting_room),
-            buildTextField(_capacidadeController, "Capacidade", Icons.people, keyboardType: TextInputType.number),
-            buildTextField(_localizacaoController, "Localização", Icons.place),
-            buildTextField(_statusController, "Status", Icons.info),
-
-            const SizedBox(height: 20),
             // ====== ITENS DA SALA ======
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Itens da Sala", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                ElevatedButton.icon(
-                  onPressed: _criarItem,
-                  icon: const Icon(Icons.add),
-                  label: const Text("Novo Item"),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1ABC9C)),
-                )
-              ],
-            ),
+            const Text("Itens disponíveis",
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            ...todosItens.map((item) {
+              final exists =
+              itensSala.any((i) => i['item_id'] == item['id']);
+              if (exists) return Container();
+              return Card(
+                child: ListTile(
+                  title: Text(item['nome']),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.add, color: Colors.green),
+                    onPressed: () => addItem(item),
+                  ),
+                ),
+              );
+            }).toList(),
+            const SizedBox(height: 16),
+            const Text("Itens da Sala",
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             ...itensSala.map((item) {
               final controller = quantidadeControllers[item['item_id']]!;
               return Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: ListTile(
-                  leading: item['itens']['url'] != null && item['itens']['url'].isNotEmpty
-                      ? ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(item['itens']['url'], width: 50, height: 50, fit: BoxFit.cover),
-                  )
-                      : const Icon(Icons.inventory_2),
                   title: Text(item['itens']['nome']),
                   trailing: SizedBox(
-                    width: 90,
+                    width: 80,
                     child: Row(
                       children: [
                         Expanded(
                           child: TextField(
                             controller: controller,
                             keyboardType: TextInputType.number,
-                            textAlign: TextAlign.center,
                             decoration: const InputDecoration(
                               border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+                              contentPadding: EdgeInsets.symmetric(
+                                  vertical: 4, horizontal: 6),
                             ),
                           ),
                         ),
@@ -320,17 +361,17 @@ class _EditarSalaPageState extends State<EditarSalaPage> {
             }).toList(),
 
             const SizedBox(height: 20),
-            // ====== BOTÃO SALVAR ======
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.save),
-                label: const Text("Salvar Sala"),
+                label: const Text("Salvar Alterações"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1ABC9C),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 onPressed: _salvarSala,
               ),
@@ -341,11 +382,12 @@ class _EditarSalaPageState extends State<EditarSalaPage> {
     );
   }
 
-  // ===================== WIDGET DE CAMPO =====================
-  Widget buildTextField(TextEditingController controller, String label, IconData icon,
+  // ===================== TEXT FIELD REUTILIZÁVEL =====================
+  Widget buildTextField(
+      TextEditingController controller, String label, IconData icon,
       {TextInputType keyboardType = TextInputType.text}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
@@ -354,7 +396,7 @@ class _EditarSalaPageState extends State<EditarSalaPage> {
           labelText: label,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           filled: true,
-          fillColor: Colors.grey[100],
+          fillColor: Colors.grey[50],
         ),
       ),
     );
