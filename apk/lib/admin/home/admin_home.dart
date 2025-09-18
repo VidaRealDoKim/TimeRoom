@@ -92,7 +92,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "Resumo Administrativo",
+            "Relatórios",
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
