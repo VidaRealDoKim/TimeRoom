@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'salas/admin_salas.dart';
-import 'criar/criar.dart'; // <-- nova página de criação
+import 'criar/criar.dart';
 import 'usuarios/admin_usuarios.dart';
 import 'home/admin_home.dart';
 
@@ -69,16 +69,22 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        title: loading
-            ? const Text("Carregando...", style: TextStyle(color: Colors.black87))
-            : const Text(
-          "Painel Administrativo",
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
+        centerTitle: true, // <-- Centraliza a logo
+        title: Image.asset(
+          "assets/LogoHorizontal.png",
+          height: 30, // ajusta o tamanho da logo
+          fit: BoxFit.contain,
         ),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 16.0),
+            child: Icon(
+              Icons.admin_panel_settings,
+              color: Colors.black87,
+              size: 28,
+            ),
+          ),
+        ],
         iconTheme: const IconThemeData(color: Colors.black87),
       ),
 
