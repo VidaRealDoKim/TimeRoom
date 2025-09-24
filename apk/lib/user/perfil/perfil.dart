@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // -----------------------------------------------------------------------------
-// Tela de Perfil do Usuário (Com edição)
+// Tela de Perfil do Usuário (Com edição e logout com confirmação)
 // -----------------------------------------------------------------------------
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
@@ -14,9 +14,7 @@ class PerfilPage extends StatefulWidget {
 class _PerfilPageState extends State<PerfilPage> {
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  // ---------------------------------------------------------------------------
   // Estado do Widget
-  // ---------------------------------------------------------------------------
   bool _notificacoesAtivadas = true;
   bool _loading = true;
   bool _editMode = false; // Ativa o modo de edição
@@ -26,6 +24,7 @@ class _PerfilPageState extends State<PerfilPage> {
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _avatarController = TextEditingController();
 
   @override
   void initState() {
@@ -37,6 +36,7 @@ class _PerfilPageState extends State<PerfilPage> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _avatarController.dispose();
     super.dispose();
   }
 
@@ -63,6 +63,7 @@ class _PerfilPageState extends State<PerfilPage> {
           _avatarUrl = response['avatar_url'];
           _nameController.text = _name!;
           _emailController.text = _email!;
+          _avatarController.text = _avatarUrl ?? '';
           _loading = false;
         });
       }
@@ -91,19 +92,20 @@ class _PerfilPageState extends State<PerfilPage> {
       final updates = {
         'name': _nameController.text,
         'email': _emailController.text,
-        // 'avatar_url': _avatarUrl, // opcional, se houver upload
+        'avatar_url': _avatarController.text.isNotEmpty
+            ? _avatarController.text
+            : null,
         'updated_at': DateTime.now().toIso8601String(),
       };
 
-      final response = await _supabase
-          .from('profiles')
-          .update(updates)
-          .eq('id', userId);
+      await _supabase.from('profiles').update(updates).eq('id', userId);
 
       if (mounted) {
         setState(() {
           _name = _nameController.text;
           _email = _emailController.text;
+          _avatarUrl =
+          _avatarController.text.isNotEmpty ? _avatarController.text : null;
           _editMode = false;
           _loading = false;
         });
@@ -123,6 +125,44 @@ class _PerfilPageState extends State<PerfilPage> {
           content: Text('Erro ao atualizar perfil: $e'),
           backgroundColor: Colors.red,
         ),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Logout com confirmação
+  // ---------------------------------------------------------------------------
+  Future<void> _confirmarLogout() async {
+    final bool? confirmar = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirmar Logout'),
+          content: const Text('Tem certeza que deseja sair da sua conta?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1ABC9C),
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Sair'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmar == true) {
+      await _supabase.auth.signOut();
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/login',
+            (route) => false,
       );
     }
   }
@@ -159,18 +199,16 @@ class _PerfilPageState extends State<PerfilPage> {
         _buildMenuOption(
           icon: Icons.logout,
           text: 'Log Out',
-          onTap: () async {
-            await _supabase.auth.signOut();
-            if (!mounted) return;
-            Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-          },
+          onTap: _confirmarLogout,
         ),
         if (_editMode)
           Padding(
             padding: const EdgeInsets.only(top: 20),
             child: ElevatedButton(
               onPressed: _updateProfile,
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1ABC9C)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1ABC9C),
+              ),
               child: const Text('Salvar alterações'),
             ),
           ),
@@ -186,7 +224,7 @@ class _PerfilPageState extends State<PerfilPage> {
       children: [
         CircleAvatar(
           radius: 35,
-          backgroundImage: _avatarUrl != null
+          backgroundImage: _avatarUrl != null && _avatarUrl!.isNotEmpty
               ? NetworkImage(_avatarUrl!)
               : const AssetImage('assets/default_avatar.png') as ImageProvider,
         ),
@@ -205,6 +243,12 @@ class _PerfilPageState extends State<PerfilPage> {
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: 'E-mail'),
               ),
+              const SizedBox(height: 5),
+              TextField(
+                controller: _avatarController,
+                decoration:
+                const InputDecoration(labelText: 'URL da Imagem'),
+              ),
             ],
           )
               : Column(
@@ -212,12 +256,14 @@ class _PerfilPageState extends State<PerfilPage> {
             children: [
               Text(
                 _name ?? '',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 5),
               Text(
                 _email ?? '',
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
+                style:
+                const TextStyle(fontSize: 14, color: Colors.grey),
               ),
             ],
           ),
@@ -249,7 +295,8 @@ class _PerfilPageState extends State<PerfilPage> {
   Widget _buildNotificationOption() {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.notifications_outlined, color: Colors.black54),
+      leading:
+      const Icon(Icons.notifications_outlined, color: Colors.black54),
       title: const Text('Notificações', style: TextStyle(fontSize: 16)),
       trailing: Switch(
         value: _notificacoesAtivadas,

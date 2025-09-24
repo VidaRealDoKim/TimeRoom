@@ -49,6 +49,7 @@ class _ReservasPageState extends State<ReservasPage> {
   bool _isLoading = true;
   String searchQuery = '';
   DateTime _dataSelecionada = DateTime.now();
+  Set<String> favoritas = {};
 
   @override
   void initState() {
@@ -119,6 +120,16 @@ class _ReservasPageState extends State<ReservasPage> {
     );
   }
 
+  void _toggleFavorito(String salaId) {
+    setState(() {
+      if (favoritas.contains(salaId)) {
+        favoritas.remove(salaId);
+      } else {
+        favoritas.add(salaId);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -156,6 +167,9 @@ class _ReservasPageState extends State<ReservasPage> {
                   onPressed: () => _selecionarData(context),
                   icon: const Icon(Icons.date_range),
                   label: Text(DateFormat('dd/MM/yyyy').format(_dataSelecionada)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2CC0AF),
+                  ),
                 ),
               ],
             ),
@@ -166,66 +180,112 @@ class _ReservasPageState extends State<ReservasPage> {
               itemCount: filteredSalas.length,
               itemBuilder: (context, index) {
                 final sala = filteredSalas[index];
-                return Card(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => NovaReservaPage(
-                            sala: {
-                              'id': sala.id,
-                              'nome': sala.nome,
-                              'capacidade': sala.capacidade,
-                              'localizacao': sala.localizacao,
-                              'url': sala.url,
-                              'descricao': sala.itens.join(', '),
-                              'media_avaliacoes': sala.mediaAvaliacoes,
-                            },
-                            dataSelecionada: _dataSelecionada,
-                          ),
-                        ),
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: sala.url != null
-                                ? Image.network(
-                              sala.url!,
-                              height: 150,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            )
-                                : Container(
-                              height: 150,
-                              color: Colors.grey[300],
-                              child: const Center(
-                                  child: Icon(Icons.meeting_room, size: 50)),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(sala.nome,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 18)),
-                          const SizedBox(height: 4),
-                          Text(
-                              "Capacidade: ${sala.capacidade} • Local: ${sala.localizacao ?? '-'}"),
-                          const SizedBox(height: 4),
-                          _buildEstrelas(sala.mediaAvaliacoes),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
+                return _buildSalaCard(sala);
               },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSalaCard(Sala sala) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 3,
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => NovaReservaPage(
+                sala: {
+                  'id': sala.id,
+                  'nome': sala.nome,
+                  'capacidade': sala.capacidade,
+                  'localizacao': sala.localizacao,
+                  'url': sala.url,
+                  'descricao': sala.itens.join(', '),
+                  'media_avaliacoes': sala.mediaAvaliacoes,
+                },
+                dataSelecionada: _dataSelecionada,
+              ),
+            ),
+          );
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: sala.url != null
+                      ? Image.network(
+                    sala.url!,
+                    height: 180,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  )
+                      : Container(
+                    height: 180,
+                    color: Colors.grey[300],
+                    child: const Center(
+                        child: Icon(Icons.meeting_room, size: 50)),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: IconButton(
+                    icon: Icon(
+                      favoritas.contains(sala.id)
+                          ? Icons.favorite
+                          : Icons.favorite_border,
+                      color: Colors.red,
+                    ),
+                    onPressed: () => _toggleFavorito(sala.id),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    sala.nome,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        sala.localizacao ?? '-',
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text("Capacidade: ${sala.capacidade}"),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      _buildEstrelas(sala.mediaAvaliacoes),
+                      const SizedBox(width: 8),
+                      Text(
+                        "(${sala.itens.length} avaliações)",
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),

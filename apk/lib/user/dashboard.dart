@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart'; // ← pacote atualizado
+import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart'; // pacote atualizado
+
 import 'home.dart';
 import 'reservar_salas.dart';
 import 'favoritos.dart';
-// import 'nova_reserva.dart';
 import 'perfil.dart';
 
 /// Instância global do Supabase
@@ -32,6 +32,33 @@ class _DashboardPageState extends State<DashboardPage> {
     PerfilPage(),
   ];
 
+  /// Dados do perfil do usuário logado
+  Map<String, dynamic>? _profile;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  /// =======================
+  /// Buscar dados do usuário logado
+  /// =======================
+  Future<void> _loadProfile() async {
+    final user = supabase.auth.currentUser;
+    if (user != null) {
+      final response = await supabase
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .maybeSingle();
+
+      setState(() {
+        _profile = response;
+      });
+    }
+  }
+
   /// =======================
   /// Alterar aba selecionada
   /// =======================
@@ -42,12 +69,39 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   /// =======================
-  /// Logout seguro
+  /// Logout com confirmação
   /// =======================
   Future<void> _logout() async {
-    await Supabase.instance.client.auth.signOut();
-    if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/login');
+    final bool? confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirmar Logout"),
+        content: const Text("Você realmente deseja sair da sua conta?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1ABC9C),
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("Sair"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      await supabase.auth.signOut();
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/login',
+            (route) => false,
+      );
+    }
   }
 
   /// =======================
@@ -59,9 +113,8 @@ class _DashboardPageState extends State<DashboardPage> {
       MaterialPageRoute(
         builder: (_) => QRViewPage(
           onScan: (String result) {
-            // Aqui você pode tratar o resultado do QR Code
-            // Evite print em produção
-            Navigator.pop(context);
+            Navigator.pop(context); // fecha a tela após ler
+            // aqui você pode tratar o resultado (ex: navegar, salvar no banco, etc.)
           },
         ),
       ),
@@ -95,19 +148,32 @@ class _DashboardPageState extends State<DashboardPage> {
                 decoration: const BoxDecoration(color: Color(0xFF1ABC9C)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     CircleAvatar(
                       radius: 30,
                       backgroundColor: Colors.white,
-                      child: Icon(Icons.person, size: 40, color: Color(0xFF1ABC9C)),
+                      backgroundImage: _profile?['avatar_url'] != null
+                          ? NetworkImage(_profile!['avatar_url'])
+                          : null,
+                      child: _profile?['avatar_url'] == null
+                          ? const Icon(Icons.person,
+                          size: 40, color: Color(0xFF1ABC9C))
+                          : null,
                     ),
-                    SizedBox(height: 12),
+                    const SizedBox(height: 12),
                     Text(
-                      "Time Room",
-                      style: TextStyle(
+                      _profile?['name'] ?? "Usuário",
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      _profile?['email'] ?? "",
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
                       ),
                     ),
                   ],
@@ -174,7 +240,8 @@ class _DashboardPageState extends State<DashboardPage> {
               shape: BoxShape.circle,
               color: Color(0xFF1ABC9C),
             ),
-            child: const Icon(Icons.qr_code_scanner, size: 32, color: Colors.white),
+            child: const Icon(Icons.qr_code_scanner,
+                size: 32, color: Colors.white),
           ),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -243,8 +310,6 @@ class _QRViewPageState extends State<QRViewPage> {
     controller?.pauseCamera();
     controller?.resumeCamera();
   }
-
-  // OBS: dispose() removido, não é mais necessário
 
   @override
   Widget build(BuildContext context) {
