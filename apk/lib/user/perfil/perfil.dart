@@ -191,8 +191,10 @@ class _PerfilPageState extends State<PerfilPage> {
         _buildMenuOption(
           icon: Icons.settings_outlined,
           text: 'Configurações',
+          // ATUALIZAÇÃO: Navega para a nova tela de configurações.
           onTap: () {
-            // TODO: Navegar para a tela de configurações
+            // Garante que a rota '/config' existe no seu main.dart!
+            Navigator.pushNamed(context, '/config');
           },
         ),
         _buildNotificationOption(),

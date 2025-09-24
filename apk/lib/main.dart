@@ -1,4 +1,5 @@
 import 'package:apk/user/favorito/favoritos.dart';
+import 'package:apk/user/perfil/config.dart';
 import 'package:apk/user/perfil/perfil.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -64,6 +65,7 @@ class MyApp extends StatelessWidget {
         '/dashboard': (context) => const DashboardPage(),
         '/perfil': (context) => const PerfilPage(),
         '/salas': (context) => const SalasFavoritasPage(),
+        '/config': (context) => const ConfigPage(),
 
         // Telas Admin
         '/admindashboard': (context) => const AdminDashboardPage(),
