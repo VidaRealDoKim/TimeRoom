@@ -1,7 +1,9 @@
 // lib/auth/login_page.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'cookie.dart'; // Importa cookies
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:local_auth/local_auth.dart';
+import 'cookie.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -16,12 +18,36 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _loading = false;
 
+  final _storage = const FlutterSecureStorage();
+  final _localAuth = LocalAuthentication();
+  bool _isBiometricAvailable = false;
+  bool _credentialsSaved = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback(
-          (_) => CookieConsent.checkAndShow(context), // Checa cookies
+          (_) => CookieConsent.checkAndShow(context),
     );
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    final canCheckBiometrics = await _localAuth.canCheckBiometrics;
+    final savedEmail = await _storage.read(key: 'email');
+
+    if (savedEmail != null) {
+      final savedPassword = await _storage.read(key: 'password');
+      setState(() {
+        _emailController.text = savedEmail;
+        _passwordController.text = savedPassword ?? '';
+        _credentialsSaved = true;
+      });
+    }
+
+    setState(() {
+      _isBiometricAvailable = canCheckBiometrics;
+    });
   }
 
   @override
@@ -31,7 +57,67 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  /// Faz login com Supabase
+  Future<void> _authenticateAndAutofill() async {
+    try {
+      final isAuthenticated = await _localAuth.authenticate(
+        localizedReason: 'Autentique para preencher suas credenciais',
+        options: const AuthenticationOptions(stickyAuth: true),
+      );
+
+      if (isAuthenticated && mounted) {
+        _login();
+      }
+    } catch (e) {
+      print("Error during biometric auth: $e");
+    }
+  }
+
+  Future<bool?> _showSaveCredentialsDialog() async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Salvar Login'),
+        content: const Text('Deseja salvar suas informações de login para a próxima vez?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Não'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateAfterLogin() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null || !mounted) return;
+
+    final profile = await Supabase.instance.client
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    if (!mounted) return;
+
+    if (profile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Perfil não encontrado.')));
+      return;
+    }
+
+    final role = profile['role'] as String;
+    if (role == 'admin') {
+      Navigator.pushReplacementNamed(context, '/admindashboard');
+    } else {
+      Navigator.pushReplacementNamed(context, '/dashboard');
+    }
+  }
+
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
@@ -40,47 +126,39 @@ class _LoginPageState extends State<LoginPage> {
       final email = _emailController.text.trim();
       final password = _passwordController.text;
 
-      final response = await Supabase.instance.client.auth.signInWithPassword(
+      await Supabase.instance.client.auth.signInWithPassword(
         email: email,
         password: password,
       );
 
-      final user = response.user;
-      if (user == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Falha ao autenticar.')),
-        );
-        return;
+      final previouslySavedEmail = await _storage.read(key: 'email');
+
+      // --- FIXED: This is the corrected logic ---
+      // Show the dialog if nothing is saved OR if the current user is different from the saved user.
+      if (previouslySavedEmail == null || previouslySavedEmail != email) {
+        final bool? shouldSave = await _showSaveCredentialsDialog();
+
+        if (shouldSave == true) {
+          await _storage.write(key: 'email', value: email);
+          await _storage.write(key: 'password', value: password);
+          if (mounted) {
+            setState(() {
+              _credentialsSaved = true;
+            });
+          }
+        }
       }
 
-      // Verifica papel (role) do usuário
-      final profile = await Supabase.instance.client
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .maybeSingle();
+      _navigateAfterLogin();
 
-      if (profile == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Perfil não encontrado.')),
-        );
-        return;
-      }
-
-      final role = profile['role'] as String;
-      if (role == 'admin') {
-        Navigator.pushReplacementNamed(context, '/admindashboard');
-      } else {
-        Navigator.pushReplacementNamed(context, '/dashboard');
-      }
     } on AuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erro inesperado.')),
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro inesperado: $e')),
       );
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -98,13 +176,7 @@ class _LoginPageState extends State<LoginPage> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12.0),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 6,
-                    offset: Offset(0, 3),
-                  ),
-                ],
+                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3),)],
               ),
               child: Form(
                 key: _formKey,
@@ -113,71 +185,55 @@ class _LoginPageState extends State<LoginPage> {
                   children: [
                     Image.asset('assets/logo.png', height: 100),
                     const SizedBox(height: 32.0),
-
-                    // E-mail
                     const Text('E-mail', style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8.0),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        hintText: 'Insira seu e-mail',
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
-                      ),
-                      validator: (v) =>
-                      v == null || v.isEmpty ? 'Por favor, insira seu e-mail.' : null,
+                      decoration: const InputDecoration(hintText: 'Insira seu e-mail', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12.0),),
+                      validator: (v) => v == null || v.isEmpty ? 'Por favor, insira seu e-mail.' : null,
                     ),
-
                     const SizedBox(height: 16.0),
-
-                    // Senha
                     const Text('Senha', style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8.0),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: true,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'Insira sua senha',
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
+                        border: const OutlineInputBorder(),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12.0),
+                        suffixIcon: _isBiometricAvailable && _credentialsSaved
+                            ? IconButton(
+                          icon: const Icon(Icons.fingerprint),
+                          onPressed: _authenticateAndAutofill,
+                          tooltip: 'Login rápido com biometria',
+                        )
+                            : null,
                       ),
-                      validator: (v) =>
-                      v == null || v.isEmpty ? 'Por favor, insira sua senha.' : null,
+                      validator: (v) => v == null || v.isEmpty ? 'Por favor, insira sua senha.' : null,
                     ),
-
                     const SizedBox(height: 24.0),
-
-                    // Botão login
                     ElevatedButton(
                       onPressed: _loading ? null : _login,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.teal,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0),),
                       ),
                       child: _loading
                           ? const CircularProgressIndicator(color: Colors.white)
                           : const Text('Entrar', style: TextStyle(fontSize: 16)),
                     ),
-
                     const SizedBox(height: 24.0),
-
-                    // Esqueci senha
                     TextButton(
                       onPressed: () => Navigator.pushNamed(context, '/forgot'),
-                      child: Text('Esqueci minha senha',
-                          style: TextStyle(color: Colors.grey[600])),
+                      child: Text('Esqueci minha senha', style: TextStyle(color: Colors.grey[600])),
                     ),
-
-                    // Criar conta
                     TextButton(
                       onPressed: () => Navigator.pushNamed(context, '/register'),
-                      child: Text('Criar conta',
-                          style: TextStyle(color: Colors.grey[600])),
+                      child: Text('Criar conta', style: TextStyle(color: Colors.grey[600])),
                     ),
                   ],
                 ),
