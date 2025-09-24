@@ -26,10 +26,9 @@ flutter:
   uses-material-design: true
   assets:
     - assets/logo.png
-    - assets/logo3.png
     - assets/logo_fundo.png
     - assets/logo_ponteiro.png
-    - assets/circulo.png
-    - assets/group18.png
     - assets/LogoHorizontal.png
+    - assets/logo_ellipse.png
+    - assets/logo_retangulo.png
     - .env
