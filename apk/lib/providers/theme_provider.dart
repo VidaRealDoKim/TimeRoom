@@ -109,11 +109,11 @@ class ThemeProvider extends ChangeNotifier {
       themeString = 'System';
     }
 
-    // Se o tema realmente mudou, atualiza o estado e avisa o app.
+    // Se o tema realmente mudou, atualiza o estado e avisa o app
     if (newThemeMode != _themeMode) {
       _themeMode = newThemeMode;
       _saveThemePreference(themeString);
-      // A "mágica" acontece aqui: notifica toda a árvore de widgets para se redesenhar.
+      // A "mágica" acontece aqui: notifica toda a árvore de widgets para se redesenhar
       notifyListeners();
     }
   }
