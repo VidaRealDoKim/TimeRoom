@@ -145,7 +145,7 @@ class _ReservasPageState extends State<ReservasPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Reservar Sala"),
-        backgroundColor: const Color(0xFF2CC0AF),
+        backgroundColor: const Color(0xFFFFFFFF),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

@@ -191,7 +191,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Bem-vindo${userName != null ? ', $userName' : ''}!"),
-        backgroundColor: const Color(0xFF2CC0AF),
+        backgroundColor: const Color(0xFFFFFFFF),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
