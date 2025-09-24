@@ -1,7 +1,9 @@
+import 'package:apk/providers/theme_provider.dart';
 import 'package:apk/user/favorito/favoritos.dart';
 import 'package:apk/user/perfil/config.dart';
 import 'package:apk/user/perfil/perfil.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -40,7 +42,14 @@ Future<void> main() async {
     print("❌ Erro ao conectar Supabase: $e");
   }
 
-  runApp(const MyApp());
+  // ATUALIZAÇÃO: Envolvemos o App com o ChangeNotifierProvider.
+  // Isso disponibiliza o ThemeProvider para toda a árvore de widgets.
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 // -----------------------------------------------------------------------------
@@ -51,8 +60,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ATUALIZAÇÃO: Consumimos o ThemeProvider para obter o estado do tema.
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      // ATUALIZAÇÃO: As propriedades de tema agora são controladas pelo Provider.
+      themeMode: themeProvider.themeMode,
+      theme: MyThemes.lightTheme,
+      darkTheme: MyThemes.darkTheme,
+
       initialRoute: '/splash',
       routes: {
         // Telas Auth

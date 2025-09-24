@@ -18,6 +18,9 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _loading = false;
 
+  // --- NEW: State variable for password visibility ---
+  bool _isPasswordObscured = true;
+
   final _storage = const FlutterSecureStorage();
   final _localAuth = LocalAuthentication();
   bool _isBiometricAvailable = false;
@@ -133,8 +136,6 @@ class _LoginPageState extends State<LoginPage> {
 
       final previouslySavedEmail = await _storage.read(key: 'email');
 
-      // --- FIXED: This is the corrected logic ---
-      // Show the dialog if nothing is saved OR if the current user is different from the saved user.
       if (previouslySavedEmail == null || previouslySavedEmail != email) {
         final bool? shouldSave = await _showSaveCredentialsDialog();
 
@@ -196,20 +197,27 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 16.0),
                     const Text('Senha', style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8.0),
+                    // --- UPDATED: The password TextFormField ---
                     TextFormField(
                       controller: _passwordController,
-                      obscureText: true,
+                      // The obscureText property now uses our state variable
+                      obscureText: _isPasswordObscured,
                       decoration: InputDecoration(
                         hintText: 'Insira sua senha',
                         border: const OutlineInputBorder(),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12.0),
-                        suffixIcon: _isBiometricAvailable && _credentialsSaved
-                            ? IconButton(
-                          icon: const Icon(Icons.fingerprint),
-                          onPressed: _authenticateAndAutofill,
-                          tooltip: 'Login rápido com biometria',
-                        )
-                            : null,
+                        // The suffixIcon now contains our new visibility toggle button
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _isPasswordObscured ? Icons.visibility_off : Icons.visibility,
+                          ),
+                          onPressed: () {
+                            // Toggles the state when the icon is pressed
+                            setState(() {
+                              _isPasswordObscured = !_isPasswordObscured;
+                            });
+                          },
+                        ),
                       ),
                       validator: (v) => v == null || v.isEmpty ? 'Por favor, insira sua senha.' : null,
                     ),
