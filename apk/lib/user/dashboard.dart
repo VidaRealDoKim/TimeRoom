@@ -7,6 +7,10 @@ import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart'; // pacote atual
 import 'favorito/favoritos.dart';
 
 import 'home/home.dart';
+import 'home/home.dart';
+import 'reserva/reservar_salas.dart';
+import 'favorito/favoritos.dart';
+import 'perfil/perfil.dart';
 
 /// Instância global do Supabase
 final supabase = Supabase.instance.client;
