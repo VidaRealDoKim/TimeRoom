@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart'; // pacote atualizado
 
-import 'home.dart';
-import 'reservar_salas.dart';
-import 'favoritos.dart';
-import 'perfil.dart';
+import 'home/home.dart';
+import 'reserva/reservar_salas.dart';
+import 'favorito/favoritos.dart';
+import 'perfil/perfil.dart';
 
 /// Instância global do Supabase
 final supabase = Supabase.instance.client;
