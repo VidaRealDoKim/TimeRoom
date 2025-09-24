@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:intl/intl.dart';
 import '../reserva/nova_reserva.dart';
 
 // -----------------------------------------------------------------------------
@@ -47,7 +46,6 @@ class _SalasFavoritasPageState extends State<SalasFavoritasPage> {
 
   List<SalaInfo> _favoritas = [];
   bool _loading = true;
-  DateTime _dataSelecionada = DateTime.now();
 
   @override
   void initState() {
@@ -91,29 +89,6 @@ class _SalasFavoritasPageState extends State<SalasFavoritasPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // Seleciona data
-  // ---------------------------------------------------------------------------
-  Future<void> _selecionarData(BuildContext context) async {
-    final DateTime? dataEscolhida = await showDatePicker(
-      context: context,
-      initialDate: _dataSelecionada,
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2030),
-    );
-
-    if (dataEscolhida != null && mounted) {
-      setState(() => _dataSelecionada = dataEscolhida);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Data selecionada: ${DateFormat('dd/MM/yyyy').format(dataEscolhida)}',
-          ),
-        ),
-      );
-    }
-  }
-
-  // ---------------------------------------------------------------------------
   // Build
   // ---------------------------------------------------------------------------
   @override
@@ -137,23 +112,9 @@ class _SalasFavoritasPageState extends State<SalasFavoritasPage> {
   }
 
   Widget _buildTitleSection() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text('Salas Favoritas',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-        GestureDetector(
-          onTap: () => _selecionarData(context),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1ABC9C),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.calendar_today, color: Colors.white),
-          ),
-        ),
-      ],
+    return const Text(
+      'Salas Favoritas',
+      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
     );
   }
 
@@ -191,7 +152,7 @@ class _SalasFavoritasPageState extends State<SalasFavoritasPage> {
                   'capacidade': sala.capacidade,
                   'url': sala.url,
                 },
-                dataSelecionada: _dataSelecionada,
+                dataSelecionada: DateTime.now(), // data padrão
               ),
             ),
           );
