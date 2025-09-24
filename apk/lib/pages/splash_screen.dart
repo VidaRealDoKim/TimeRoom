@@ -23,7 +23,7 @@ class _SplashScreenState extends State<SplashScreen>
     // Inicializa o controlador da animação.
     // Duração de 3 segundos para uma volta completa do ponteiro.
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1000),
       vsync: this,
     )..repeat();// O '..repeat()' faz a animação ficar em loop contínuo.
 
