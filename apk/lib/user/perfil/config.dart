@@ -1,7 +1,10 @@
+import 'package:apk/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 // -----------------------------------------------------------------------------
-// Tela de Configurações do Aplicativo
+// Tela de Configurações do Aplicativo (Versão com botão Salvar)
+// ** ATUALIZADO para StatefulWidget para gerenciar a seleção temporária do tema **
 // -----------------------------------------------------------------------------
 class ConfigPage extends StatefulWidget {
   const ConfigPage({super.key});
@@ -12,51 +15,36 @@ class ConfigPage extends StatefulWidget {
 
 class _ConfigPageState extends State<ConfigPage> {
   // ---------------------------------------------------------------------------
-  // Estado do Widget (State)
-  // Variáveis que controlam os valores das configurações na tela.
-  // ---------------------------------------------------------------------------
-
-  // Controla o estado do switch de notificações.
-  bool _notificacoesGerais = true;
-  // Controla o tema selecionado (exemplo, não muda o app inteiro ainda).
-  String _temaSelecionado = 'Sistema';
-
-  // ---------------------------------------------------------------------------
   // Build (Construção da Interface)
   // ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
+    // Acessamos o ThemeProvider para obter o estado atual
+    // e para chamar a função que muda o tema.
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
-        // Título da página.
         title: const Text('Configurações'),
-        // Cor de fundo da AppBar.
-        backgroundColor: const Color(0xFF1ABC9C),
       ),
       body: ListView(
-        // ListView permite que a tela role se houver muitas opções.
         children: [
-          // Seção de Notificações
+          // Seção de Notificações (exemplo)
           _buildSectionHeader('Notificações'),
           SwitchListTile(
             title: const Text('Receber notificações gerais'),
-            subtitle: const Text('Avisos sobre reservas e novidades.'),
-            value: _notificacoesGerais,
-            onChanged: (bool value) {
-              setState(() {
-                _notificacoesGerais = value;
-              });
-              // TODO: Salvar esta preferência no dispositivo ou no perfil do usuário.
-            },
-            activeColor: const Color(0xFF1ABC9C),
+            value: true, // Lógica a ser implementada
+            onChanged: (bool value) {},
+            activeColor: Theme.of(context).colorScheme.primary,
           ),
 
           // Seção de Aparência
           _buildSectionHeader('Aparência'),
           ListTile(
             title: const Text('Tema'),
-            subtitle: Text(_temaSelecionado),
-            onTap: _mostrarDialogoDeTema,
+            // Mostra o tema selecionado atualmente.
+            subtitle: Text(themeProvider.themeModeString),
+            onTap: () => _mostrarDialogoDeTema(context, themeProvider),
             leading: const Icon(Icons.palette_outlined),
           ),
 
@@ -65,35 +53,12 @@ class _ConfigPageState extends State<ConfigPage> {
           ListTile(
             title: const Text('Alterar Senha'),
             leading: const Icon(Icons.lock_outline),
-            onTap: () {
-              // TODO: Navegar para uma tela específica de alteração de senha.
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Função de alterar senha a ser implementada.')),
-              );
-            },
+            onTap: () {},
           ),
           ListTile(
             title: const Text('Excluir Conta', style: TextStyle(color: Colors.red)),
             leading: const Icon(Icons.delete_outline, color: Colors.red),
-            onTap: _confirmarExclusaoConta,
-          ),
-
-          // Seção Sobre
-          _buildSectionHeader('Sobre'),
-          ListTile(
-            title: const Text('Termos de Serviço'),
-            leading: const Icon(Icons.description_outlined),
-            onTap: () { /* TODO: Abrir link para os termos */ },
-          ),
-          ListTile(
-            title: const Text('Política de Privacidade'),
-            leading: const Icon(Icons.privacy_tip_outlined),
-            onTap: () { /* TODO: Abrir link para a política */ },
-          ),
-          const ListTile(
-            title: Text('Versão do App'),
-            subtitle: Text('1.0.0'), // Exemplo de versão
-            leading: Icon(Icons.info_outline),
+            onTap: () {},
           ),
         ],
       ),
@@ -104,7 +69,6 @@ class _ConfigPageState extends State<ConfigPage> {
   // Widgets Auxiliares e Lógica
   // ---------------------------------------------------------------------------
 
-  // Constrói um cabeçalho de seção para organizar as opções.
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
@@ -119,83 +83,75 @@ class _ConfigPageState extends State<ConfigPage> {
     );
   }
 
-  // Mostra um pop-up (AlertDialog) para o usuário escolher o tema.
-  void _mostrarDialogoDeTema() {
+  // ATUALIZAÇÃO: O diálogo agora tem um estado interno para a seleção temporária
+  // e um botão "Salvar" para aplicar a mudança.
+  void _mostrarDialogoDeTema(BuildContext context, ThemeProvider themeProvider) {
+    // Variável para guardar a escolha do usuário ANTES de ele clicar em salvar.
+    String tempThemeSelection = themeProvider.themeModeString;
+
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Escolha um tema'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<String>(
-                title: const Text('Claro'),
-                value: 'Claro',
-                groupValue: _temaSelecionado,
-                onChanged: (value) => _selecionarTema(value!),
+        // StatefulBuilder permite que o conteúdo do diálogo tenha seu próprio estado e se atualize.
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Escolha um tema'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  RadioListTile<String>(
+                    title: const Text('Claro'),
+                    value: 'Claro',
+                    groupValue: tempThemeSelection,
+                    onChanged: (value) {
+                      setDialogState(() {
+                        tempThemeSelection = value!;
+                      });
+                    },
+                  ),
+                  RadioListTile<String>(
+                    title: const Text('Escuro'),
+                    value: 'Escuro',
+                    groupValue: tempThemeSelection,
+                    onChanged: (value) {
+                      setDialogState(() {
+                        tempThemeSelection = value!;
+                      });
+                    },
+                  ),
+                  RadioListTile<String>(
+                    title: const Text('Padrão do Sistema'),
+                    value: 'Sistema',
+                    groupValue: tempThemeSelection,
+                    onChanged: (value) {
+                      setDialogState(() {
+                        tempThemeSelection = value!;
+                      });
+                    },
+                  ),
+                ],
               ),
-              RadioListTile<String>(
-                title: const Text('Escuro'),
-                value: 'Escuro',
-                groupValue: _temaSelecionado,
-                onChanged: (value) => _selecionarTema(value!),
-              ),
-              RadioListTile<String>(
-                title: const Text('Padrão do Sistema'),
-                value: 'Sistema',
-                groupValue: _temaSelecionado,
-                onChanged: (value) => _selecionarTema(value!),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Fechar'),
-            )
-          ],
-        );
-      },
-    );
-  }
-
-  // Atualiza o estado do tema selecionado e fecha o diálogo.
-  void _selecionarTema(String tema) {
-    setState(() {
-      _temaSelecionado = tema;
-    });
-    // TODO: Adicionar lógica para de fato mudar o tema do aplicativo.
-    Navigator.of(context).pop();
-  }
-
-  // Mostra um diálogo de confirmação antes de uma ação destrutiva como excluir a conta.
-  void _confirmarExclusaoConta() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Excluir Conta'),
-          content: const Text('Esta ação é permanente e não pode ser desfeita. Tem certeza que deseja continuar?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: () {
-                Navigator.of(context).pop();
-                // TODO: Implementar a lógica real de exclusão de conta no Supabase.
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Conta excluída (simulação).')),
-                );
-              },
-              child: const Text('Excluir'),
-            ),
-          ],
+              // ATUALIZAÇÃO: Adicionamos botões de Ação.
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    // Só aqui, ao clicar em Salvar, chamamos a função para mudar o tema.
+                    themeProvider.setTheme(tempThemeSelection);
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Salvar'),
+                )
+              ],
+            );
+          },
         );
       },
     );
   }
 }
+
