@@ -1,3 +1,5 @@
+import 'package:apk/user/favorito/favoritos.dart';
+import 'package:apk/user/perfil/perfil.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -6,11 +8,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 // Importações internas (telas principais do projeto)
 // -----------------------------------------------------------------------------
 import 'user/dashboard.dart';
-import 'user/perfil.dart';
-import 'user/nova_reserva.dart';
-import 'user/confirmacao_reserva.dart';
 import 'admin/admin_dashboard.dart';
-import 'user/favoritos.dart';
 import 'user/splash_screen.dart';
 
 // Auth
