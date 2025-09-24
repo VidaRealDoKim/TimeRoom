@@ -15,8 +15,8 @@ class _AdminHomePageState extends State<AdminHomePage> {
   bool loading = true;
 
   int totalSalas = 0;
-  int salasReservadas = 0;
-  int salasDisponiveis = 0;
+  int salasReservadasHoje = 0;
+  int salasDisponiveisHoje = 0;
   String salaMenosUsada = "-";
   int totalItens = 0;
   double mediaFeedback = 0.0;
@@ -27,30 +27,33 @@ class _AdminHomePageState extends State<AdminHomePage> {
     fetchDashboardData();
   }
 
-  /// Busca dados para o dashboard
+  /// ===================== FETCH DASHBOARD DATA =====================
+  /// Busca todos os dados necessários para os cards do dashboard
   Future<void> fetchDashboardData() async {
     try {
-      // Total de salas
+      // Total de salas cadastradas
       final salasList = await supabase.from('salas').select();
       totalSalas = salasList.length;
 
-      // Salas reservadas (status 'pendente' ou 'confirmada')
-      final reservasList = await supabase
+      // Total de reservas **ativas hoje** (status 'pendente' ou 'confirmada')
+      final reservasHoje = await supabase
           .from('reservas')
           .select()
-          .filter('status', 'in', ['pendente', 'confirmada']);
-      salasReservadas = reservasList.length;
+          .filter('status', 'in', ['pendente', 'confirmada'])
+          .eq('data_reserva', DateTime.now().toIso8601String().substring(0, 10));
+      salasReservadasHoje = reservasHoje.length;
 
-      // Salas disponíveis
-      salasDisponiveis = totalSalas - salasReservadas;
+      // Salas disponíveis hoje
+      salasDisponiveisHoje = totalSalas - salasReservadasHoje;
 
-      // Menos utilizada (contagem de reservas por sala, calculado localmente)
-      final reservasTodas = await supabase.from('reservas').select('sala_id');
+      // Sala menos utilizada (todas as reservas)
+      final todasReservas = await supabase.from('reservas').select('sala_id');
       Map<String, int> contagemSalas = {};
-      for (var r in reservasTodas) {
+      for (var r in todasReservas) {
         final salaId = r['sala_id'] as String;
         contagemSalas[salaId] = (contagemSalas[salaId] ?? 0) + 1;
       }
+
       if (contagemSalas.isNotEmpty) {
         final menorUsoSalaId =
             contagemSalas.entries.reduce((a, b) => a.value < b.value ? a : b).key;
@@ -58,11 +61,11 @@ class _AdminHomePageState extends State<AdminHomePage> {
         salaMenosUsada = sala['nome'] ?? "-";
       }
 
-      // Total de itens
+      // Total de itens (somando quantidade de cada item vinculado a salas)
       final itensList = await supabase.from('salas_itens').select();
       totalItens = itensList.fold<int>(0, (sum, item) => sum + (item['quantidade'] as int));
 
-      // Média de feedbacks
+      // Média de feedbacks (nota de 1 a 5)
       final feedbacks = await supabase.from('feedback_salas').select('nota');
       if (feedbacks.isNotEmpty) {
         int soma = feedbacks.fold<int>(0, (sum, f) => sum + (f['nota'] as int));
@@ -78,7 +81,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
     }
   }
 
-
+  /// ===================== BUILD UI =====================
   @override
   Widget build(BuildContext context) {
     if (loading) return const Center(child: CircularProgressIndicator());
@@ -89,7 +92,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "Resumo Administrativo",
+            "Relatórios",
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -98,7 +101,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
           ),
           const SizedBox(height: 20),
 
-          // Grid com os cards
+          // Grid de cards
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -107,13 +110,13 @@ class _AdminHomePageState extends State<AdminHomePage> {
             mainAxisSpacing: 12,
             children: [
               _buildDashboardCard(
-                  title: "Salas Reservadas",
-                  value: salasReservadas.toString(),
+                  title: "Salas Reservadas Hoje",
+                  value: salasReservadasHoje.toString(),
                   icon: Icons.meeting_room,
                   color: Colors.orange),
               _buildDashboardCard(
-                  title: "Salas Disponíveis",
-                  value: salasDisponiveis.toString(),
+                  title: "Salas Disponíveis Hoje",
+                  value: salasDisponiveisHoje.toString(),
                   icon: Icons.check_circle,
                   color: Colors.green),
               _buildDashboardCard(
@@ -143,7 +146,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
     );
   }
 
-  /// Widget helper para construir cada card do dashboard
+  /// ===================== DASHBOARD CARD BUILDER =====================
   Widget _buildDashboardCard({
     required String title,
     required String value,
@@ -159,7 +162,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, size: 40, color: color),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Text(
               value,
               style: TextStyle(

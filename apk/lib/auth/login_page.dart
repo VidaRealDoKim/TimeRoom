@@ -1,6 +1,7 @@
-// lib/auth/login.dart
+// lib/auth/login_page.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'cookie.dart'; // Importa cookies
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -16,64 +17,67 @@ class _LoginPageState extends State<LoginPage> {
   bool _loading = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback(
+          (_) => CookieConsent.checkAndShow(context), // Checa cookies
+    );
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
+  /// Faz login com Supabase
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _loading = true);
 
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
-
     try {
-      // Login com Supabase
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+
       final response = await Supabase.instance.client.auth.signInWithPassword(
         email: email,
         password: password,
       );
 
       final user = response.user;
-
-      if (user != null) {
-        // Pegar role do usuário no perfil
-        final profile = await Supabase.instance.client
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .maybeSingle();
-
-        if (profile == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Perfil não encontrado.')),
-          );
-          setState(() => _loading = false);
-          return;
-        }
-
-        final role = profile['role'] as String;
-
-        if (role == 'admin') {
-          Navigator.pushReplacementNamed(context, '/admindashboard');
-        } else {
-          Navigator.pushReplacementNamed(context, '/dashboard');
-        }
-      } else {
+      if (user == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Falha ao autenticar.')),
         );
+        return;
+      }
+
+      // Verifica papel (role) do usuário
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (profile == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Perfil não encontrado.')),
+        );
+        return;
+      }
+
+      final role = profile['role'] as String;
+      if (role == 'admin') {
+        Navigator.pushReplacementNamed(context, '/admindashboard');
+      } else {
+        Navigator.pushReplacementNamed(context, '/dashboard');
       }
     } on AuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erro inesperado. Tente novamente.')),
+        const SnackBar(content: Text('Erro inesperado.')),
       );
     } finally {
       setState(() => _loading = false);
@@ -107,13 +111,11 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Image.asset(
-                      'assets/logo.png',
-                      height: 100,
-                    ),
+                    Image.asset('assets/logo.png', height: 100),
                     const SizedBox(height: 32.0),
-                    const Text('E-mail',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+
+                    // E-mail
+                    const Text('E-mail', style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8.0),
                     TextFormField(
                       controller: _emailController,
@@ -123,16 +125,14 @@ class _LoginPageState extends State<LoginPage> {
                         border: OutlineInputBorder(),
                         contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor, insira seu e-mail.';
-                        }
-                        return null;
-                      },
+                      validator: (v) =>
+                      v == null || v.isEmpty ? 'Por favor, insira seu e-mail.' : null,
                     ),
+
                     const SizedBox(height: 16.0),
-                    const Text('Senha',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+
+                    // Senha
+                    const Text('Senha', style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8.0),
                     TextFormField(
                       controller: _passwordController,
@@ -142,18 +142,17 @@ class _LoginPageState extends State<LoginPage> {
                         border: OutlineInputBorder(),
                         contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor, insira sua senha.';
-                        }
-                        return null;
-                      },
+                      validator: (v) =>
+                      v == null || v.isEmpty ? 'Por favor, insira sua senha.' : null,
                     ),
+
                     const SizedBox(height: 24.0),
+
+                    // Botão login
                     ElevatedButton(
                       onPressed: _loading ? null : _login,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal[400],
+                        backgroundColor: Colors.teal,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
                         shape: RoundedRectangleBorder(
@@ -162,29 +161,23 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       child: _loading
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                        'Entrar',
-                        style: TextStyle(fontSize: 16),
-                      ),
+                          : const Text('Entrar', style: TextStyle(fontSize: 16)),
                     ),
+
                     const SizedBox(height: 24.0),
+
+                    // Esqueci senha
                     TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/forgot');
-                      },
-                      child: Text(
-                        'Esqueci minha senha',
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
+                      onPressed: () => Navigator.pushNamed(context, '/forgot'),
+                      child: Text('Esqueci minha senha',
+                          style: TextStyle(color: Colors.grey[600])),
                     ),
+
+                    // Criar conta
                     TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/register');
-                      },
-                      child: Text(
-                        'Criar conta',
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
+                      onPressed: () => Navigator.pushNamed(context, '/register'),
+                      child: Text('Criar conta',
+                          style: TextStyle(color: Colors.grey[600])),
                     ),
                   ],
                 ),

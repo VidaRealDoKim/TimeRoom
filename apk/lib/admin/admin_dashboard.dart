@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'salas/admin_salas.dart';
+import 'criar/criar.dart';
 import 'usuarios/admin_usuarios.dart';
 import 'home/admin_home.dart';
 
-/// Instância do Supabase para autenticação e banco de dados
+/// Instância do Supabase
 final supabase = Supabase.instance.client;
 
 /// Página principal do Painel Administrativo
@@ -16,42 +17,31 @@ class AdminDashboardPage extends StatefulWidget {
 }
 
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
-  /// Perfil do usuário logado (retirado da tabela "profiles")
   Map<String, dynamic>? profile;
-
-  /// Indicador de carregamento
   bool loading = true;
-
-  /// Índice da aba selecionada (para BottomNavigationBar)
   int _selectedIndex = 0;
 
-  /// Lista de páginas (conteúdo exibido em cada aba)
+  /// Lista de páginas exibidas nas abas
   final List<Widget> _pages = const [
-    // Página inicial (nova página)
-    AdminHomePage(),
-    // Página de salas administrativas
-    AdminSalasPage(),
-    // Página de usuários administrativos
-    AdminUsuariosPage(),
+    AdminHomePage(),     // Aba 0 - Início
+    AdminSalasPage(),    // Aba 1 - Listar/Editar Salas
+    CriarSalaPage(),     // Aba 2 - Criar Sala (nova aba)
+    AdminUsuariosPage(), // Aba 3 - Usuários
   ];
 
   @override
   void initState() {
     super.initState();
-    fetchProfile(); // Carrega perfil ao iniciar
+    fetchProfile();
   }
 
-  /// Busca os dados do perfil no Supabase
   Future<void> fetchProfile() async {
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
     try {
-      final response = await supabase
-          .from('profiles')
-          .select()
-          .eq('id', user.id)
-          .single();
+      final response =
+      await supabase.from('profiles').select().eq('id', user.id).single();
 
       setState(() {
         profile = response;
@@ -63,14 +53,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     }
   }
 
-  /// Executa o logout do usuário
   Future<void> _logout(BuildContext context) async {
     await supabase.auth.signOut();
     if (!context.mounted) return;
     Navigator.pushReplacementNamed(context, '/login');
   }
 
-  /// Atualiza a aba selecionada no BottomNavigationBar
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
   }
@@ -78,32 +66,32 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Barra superior
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        title: loading
-            ? const Text(
-          "Carregando...",
-          style: TextStyle(color: Colors.black87),
-        )
-            : const Text(
-          "Painel Administrativo",
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
+        centerTitle: true, // <-- Centraliza a logo
+        title: Image.asset(
+          "assets/LogoHorizontal.png",
+          height: 30, // ajusta o tamanho da logo
+          fit: BoxFit.contain,
         ),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 16.0),
+            child: Icon(
+              Icons.admin_panel_settings,
+              color: Colors.black87,
+              size: 28,
+            ),
+          ),
+        ],
         iconTheme: const IconThemeData(color: Colors.black87),
       ),
 
-      // Menu lateral (Drawer)
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            // Cabeçalho do Drawer
             DrawerHeader(
               decoration: const BoxDecoration(color: Color(0xFF1ABC9C)),
               child: Column(
@@ -130,8 +118,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 ],
               ),
             ),
-
-            // Itens do Drawer
             ListTile(
               leading: const Icon(Icons.home),
               title: const Text("Dashboard"),
@@ -149,17 +135,22 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text("Usuários"),
+              leading: const Icon(Icons.add_business),
+              title: const Text("Criar Sala"),
               onTap: () {
                 Navigator.pop(context);
                 setState(() => _selectedIndex = 2);
               },
             ),
-
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text("Usuários"),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _selectedIndex = 3);
+              },
+            ),
             const Divider(),
-
-            // Logout
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text("Logout"),
@@ -169,10 +160,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         ),
       ),
 
-      // Corpo da página (conteúdo principal)
       body: _pages[_selectedIndex],
 
-      // Barra inferior de navegação
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
@@ -188,6 +177,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           BottomNavigationBarItem(
             icon: Icon(Icons.meeting_room),
             label: "Salas",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.add_business),
+            label: "Criar Sala",
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),

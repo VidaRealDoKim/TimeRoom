@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // -----------------------------------------------------------------------------
-// Tela de Perfil do Usuário (Com edição via popup incluindo avatar)
+// Tela de Perfil do Usuário (Com edição)
 // -----------------------------------------------------------------------------
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
@@ -14,16 +14,18 @@ class PerfilPage extends StatefulWidget {
 class _PerfilPageState extends State<PerfilPage> {
   final SupabaseClient _supabase = Supabase.instance.client;
 
+  // ---------------------------------------------------------------------------
+  // Estado do Widget
+  // ---------------------------------------------------------------------------
   bool _notificacoesAtivadas = true;
   bool _loading = true;
-
+  bool _editMode = false; // Ativa o modo de edição
   String? _avatarUrl;
   String? _name;
   String? _email;
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _avatarController = TextEditingController();
 
   @override
   void initState() {
@@ -35,7 +37,6 @@ class _PerfilPageState extends State<PerfilPage> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _avatarController.dispose();
     super.dispose();
   }
 
@@ -44,6 +45,7 @@ class _PerfilPageState extends State<PerfilPage> {
   // ---------------------------------------------------------------------------
   Future<void> _fetchUserProfile() async {
     setState(() => _loading = true);
+
     try {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return;
@@ -61,7 +63,6 @@ class _PerfilPageState extends State<PerfilPage> {
           _avatarUrl = response['avatar_url'];
           _nameController.text = _name!;
           _emailController.text = _email!;
-          _avatarController.text = _avatarUrl ?? '';
           _loading = false;
         });
       }
@@ -82,6 +83,7 @@ class _PerfilPageState extends State<PerfilPage> {
   // ---------------------------------------------------------------------------
   Future<void> _updateProfile() async {
     setState(() => _loading = true);
+
     try {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return;
@@ -89,21 +91,23 @@ class _PerfilPageState extends State<PerfilPage> {
       final updates = {
         'name': _nameController.text,
         'email': _emailController.text,
-        'avatar_url': _avatarController.text,
+        // 'avatar_url': _avatarUrl, // opcional, se houver upload
         'updated_at': DateTime.now().toIso8601String(),
       };
 
-      await _supabase.from('profiles').update(updates).eq('id', userId);
+      final response = await _supabase
+          .from('profiles')
+          .update(updates)
+          .eq('id', userId);
 
       if (mounted) {
         setState(() {
           _name = _nameController.text;
           _email = _emailController.text;
-          _avatarUrl = _avatarController.text;
+          _editMode = false;
           _loading = false;
         });
 
-        Navigator.of(context).pop(); // Fecha o popup
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Perfil atualizado com sucesso!'),
@@ -124,61 +128,13 @@ class _PerfilPageState extends State<PerfilPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // Abre o popup de edição de perfil
-  // ---------------------------------------------------------------------------
-  void _showEditProfileDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Editar Perfil'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: _avatarController,
-                  decoration: const InputDecoration(
-                    labelText: 'URL da Imagem de Perfil',
-                  ),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Nome'),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(labelText: 'E-mail'),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: _updateProfile,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1ABC9C),
-              ),
-              child: const Text('Salvar'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Build principal
+  // Build
   // ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30),
@@ -188,12 +144,16 @@ class _PerfilPageState extends State<PerfilPage> {
         _buildMenuOption(
           icon: Icons.person_outline,
           text: 'Editar Perfil',
-          onTap: _showEditProfileDialog,
+          onTap: () {
+            setState(() => _editMode = !_editMode);
+          },
         ),
         _buildMenuOption(
           icon: Icons.settings_outlined,
           text: 'Configurações',
-          onTap: () {},
+          onTap: () {
+            // TODO: Navegar para a tela de configurações
+          },
         ),
         _buildNotificationOption(),
         _buildMenuOption(
@@ -205,25 +165,49 @@ class _PerfilPageState extends State<PerfilPage> {
             Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
           },
         ),
+        if (_editMode)
+          Padding(
+            padding: const EdgeInsets.only(top: 20),
+            child: ElevatedButton(
+              onPressed: _updateProfile,
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1ABC9C)),
+              child: const Text('Salvar alterações'),
+            ),
+          ),
       ],
     );
   }
 
   // ---------------------------------------------------------------------------
-  // Informações do usuário
+  // Seção de informações do usuário
   // ---------------------------------------------------------------------------
   Widget _buildUserInfo() {
     return Row(
       children: [
         CircleAvatar(
           radius: 35,
-          backgroundImage: _avatarUrl != null && _avatarUrl!.isNotEmpty
+          backgroundImage: _avatarUrl != null
               ? NetworkImage(_avatarUrl!)
               : const AssetImage('assets/default_avatar.png') as ImageProvider,
         ),
         const SizedBox(width: 15),
         Expanded(
-          child: Column(
+          child: _editMode
+              ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: 'Nome'),
+              ),
+              const SizedBox(height: 5),
+              TextField(
+                controller: _emailController,
+                decoration: const InputDecoration(labelText: 'E-mail'),
+              ),
+            ],
+          )
+              : Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -242,6 +226,9 @@ class _PerfilPageState extends State<PerfilPage> {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Item de menu
+  // ---------------------------------------------------------------------------
   Widget _buildMenuOption({
     required IconData icon,
     required String text,
@@ -256,6 +243,9 @@ class _PerfilPageState extends State<PerfilPage> {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Item de notificação
+  // ---------------------------------------------------------------------------
   Widget _buildNotificationOption() {
     return ListTile(
       contentPadding: EdgeInsets.zero,
