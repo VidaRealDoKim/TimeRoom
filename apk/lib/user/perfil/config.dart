@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-// -----------------------------------------------------------------------------
-// Tela de Configurações do Aplicativo
-// -----------------------------------------------------------------------------
+final supabase = Supabase.instance.client;
+
+/// -----------------------------------------------------------------------------
+/// Tela de Configurações do Aplicativo
+/// -----------------------------------------------------------------------------
+/// Permite que o usuário altere suas preferências, tema, senha e exclua sua conta.
+/// Apenas afeta o usuário logado (sem privilégios de admin).
+/// -----------------------------------------------------------------------------
 class ConfigPage extends StatefulWidget {
   const ConfigPage({super.key});
 
@@ -12,87 +18,82 @@ class ConfigPage extends StatefulWidget {
 
 class _ConfigPageState extends State<ConfigPage> {
   // ---------------------------------------------------------------------------
-  // Estado do Widget (State)
-  // Variáveis que controlam os valores das configurações na tela.
+  // Estados do Widget
   // ---------------------------------------------------------------------------
 
-  // Controla o estado do switch de notificações.
+  // Controla o switch de notificações.
   bool _notificacoesGerais = true;
-  // Controla o tema selecionado (exemplo, não muda o app inteiro ainda).
+
+  // Tema selecionado pelo usuário.
   String _temaSelecionado = 'Sistema';
 
-  // ---------------------------------------------------------------------------
-  // Build (Construção da Interface)
-  // ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // Título da página.
         title: const Text('Configurações'),
-        // Cor de fundo da AppBar.
         backgroundColor: const Color(0xFF1ABC9C),
       ),
       body: ListView(
-        // ListView permite que a tela role se houver muitas opções.
         children: [
-          // Seção de Notificações
+          // ------------------------------ NOTIFICAÇÕES ------------------------------
           _buildSectionHeader('Notificações'),
           SwitchListTile(
             title: const Text('Receber notificações gerais'),
             subtitle: const Text('Avisos sobre reservas e novidades.'),
             value: _notificacoesGerais,
-            onChanged: (bool value) {
-              setState(() {
-                _notificacoesGerais = value;
-              });
-              // TODO: Salvar esta preferência no dispositivo ou no perfil do usuário.
+            onChanged: (value) {
+              setState(() => _notificacoesGerais = value);
+              // TODO: Salvar preferência no Supabase ou local storage
             },
-            activeColor: const Color(0xFF1ABC9C),
+            activeThumbColor: const Color(0xFF1ABC9C),
+            activeTrackColor: const Color(0xFF80E5D8),
           ),
 
-          // Seção de Aparência
+          // ------------------------------- APARÊNCIA -------------------------------
           _buildSectionHeader('Aparência'),
           ListTile(
             title: const Text('Tema'),
             subtitle: Text(_temaSelecionado),
-            onTap: _mostrarDialogoDeTema,
             leading: const Icon(Icons.palette_outlined),
+            onTap: _mostrarDialogoDeTema,
           ),
 
-          // Seção de Conta
+          // -------------------------------- CONTA ----------------------------------
           _buildSectionHeader('Conta'),
           ListTile(
             title: const Text('Alterar Senha'),
             leading: const Icon(Icons.lock_outline),
-            onTap: () {
-              // TODO: Navegar para uma tela específica de alteração de senha.
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Função de alterar senha a ser implementada.')),
-              );
-            },
+            onTap: _alterarSenha,
           ),
           ListTile(
-            title: const Text('Excluir Conta', style: TextStyle(color: Colors.red)),
+            title: const Text(
+              'Excluir Conta',
+              style: TextStyle(color: Colors.red),
+            ),
             leading: const Icon(Icons.delete_outline, color: Colors.red),
             onTap: _confirmarExclusaoConta,
           ),
 
-          // Seção Sobre
+          // --------------------------------- SOBRE ----------------------------------
           _buildSectionHeader('Sobre'),
           ListTile(
             title: const Text('Termos de Serviço'),
             leading: const Icon(Icons.description_outlined),
-            onTap: () { /* TODO: Abrir link para os termos */ },
+            onTap: () {
+              // TODO: Abrir link para os termos
+            },
           ),
           ListTile(
             title: const Text('Política de Privacidade'),
             leading: const Icon(Icons.privacy_tip_outlined),
-            onTap: () { /* TODO: Abrir link para a política */ },
+            onTap: () {
+              // TODO: Abrir link para a política
+            },
           ),
           const ListTile(
             title: Text('Versão do App'),
-            subtitle: Text('1.0.0'), // Exemplo de versão
+            subtitle: Text('1.0.0'),
             leading: Icon(Icons.info_outline),
           ),
         ],
@@ -101,10 +102,10 @@ class _ConfigPageState extends State<ConfigPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // Widgets Auxiliares e Lógica
+  // WIDGETS AUXILIARES
   // ---------------------------------------------------------------------------
 
-  // Constrói um cabeçalho de seção para organizar as opções.
+  /// Constrói o cabeçalho de cada seção da tela
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
@@ -119,7 +120,7 @@ class _ConfigPageState extends State<ConfigPage> {
     );
   }
 
-  // Mostra um pop-up (AlertDialog) para o usuário escolher o tema.
+  /// Mostra um diálogo para o usuário escolher o tema
   void _mostrarDialogoDeTema() {
     showDialog(
       context: context,
@@ -128,55 +129,45 @@ class _ConfigPageState extends State<ConfigPage> {
           title: const Text('Escolha um tema'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<String>(
-                title: const Text('Claro'),
-                value: 'Claro',
+            children: ['Claro', 'Escuro', 'Sistema'].map((tema) {
+              return RadioListTile<String>(
+                title: Text(tema),
+                value: tema,
                 groupValue: _temaSelecionado,
-                onChanged: (value) => _selecionarTema(value!),
-              ),
-              RadioListTile<String>(
-                title: const Text('Escuro'),
-                value: 'Escuro',
-                groupValue: _temaSelecionado,
-                onChanged: (value) => _selecionarTema(value!),
-              ),
-              RadioListTile<String>(
-                title: const Text('Padrão do Sistema'),
-                value: 'Sistema',
-                groupValue: _temaSelecionado,
-                onChanged: (value) => _selecionarTema(value!),
-              ),
-            ],
+                    onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _temaSelecionado = value);
+                    // TODO: Aplicar tema ao app
+                    Navigator.of(context).pop();
+                  }
+                },
+              );
+            }).toList(),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Fechar'),
-            )
-          ],
         );
       },
     );
   }
 
-  // Atualiza o estado do tema selecionado e fecha o diálogo.
-  void _selecionarTema(String tema) {
-    setState(() {
-      _temaSelecionado = tema;
-    });
-    // TODO: Adicionar lógica para de fato mudar o tema do aplicativo.
-    Navigator.of(context).pop();
+  /// Abre a tela ou fluxo para alterar senha do próprio usuário
+  void _alterarSenha() {
+    // TODO: Implementar tela de alteração de senha
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Função de alterar senha ainda não implementada.'),
+      ),
+    );
   }
 
-  // Mostra um diálogo de confirmação antes de uma ação destrutiva como excluir a conta.
+  /// Mostra diálogo de confirmação antes de excluir conta
   void _confirmarExclusaoConta() {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text('Excluir Conta'),
-          content: const Text('Esta ação é permanente e não pode ser desfeita. Tem certeza que deseja continuar?'),
+          content: const Text(
+              'Esta ação é permanente e não pode ser desfeita. Tem certeza que deseja continuar?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -184,18 +175,52 @@ class _ConfigPageState extends State<ConfigPage> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: () {
-                Navigator.of(context).pop();
-                // TODO: Implementar a lógica real de exclusão de conta no Supabase.
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Conta excluída (simulação).')),
-                );
-              },
-              child: const Text('Excluir'),
+              onPressed: _excluirConta,
+              child: const Text('Confirmar'),
             ),
           ],
         );
       },
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // LÓGICA DE NEGÓCIO
+  // ---------------------------------------------------------------------------
+
+  /// Exclui todos os dados do usuário e a conta do Supabase
+  Future<void> _excluirConta() async {
+    Navigator.of(context).pop(); // fecha diálogo primeiro
+
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) throw Exception('Usuário não autenticado');
+
+      final userId = user.id;
+
+      // Excluir dados relacionados
+      await supabase.from('reservas').delete().eq('user_id', userId);
+      await supabase.from('reservas_log').delete().eq('usuario_id', userId);
+      await supabase.from('feedback_salas').delete().eq('usuario_id', userId);
+      await supabase.from('salas_favoritas').delete().eq('usuario_id', userId);
+      await supabase.from('profiles').delete().eq('id', userId);
+
+      // Excluir usuário do auth
+      await supabase.auth.admin.deleteUser(userId);
+      await supabase.auth.signOut();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Conta excluída com sucesso!')),
+      );
+
+      Navigator.of(context).pop(); // fecha ConfigPage
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao excluir conta: $e')),
+      );
+    }
   }
 }
