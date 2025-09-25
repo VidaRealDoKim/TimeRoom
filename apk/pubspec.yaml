@@ -10,15 +10,34 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  # Calendário
   table_calendar: ^3.0.9
+
+  # Supabase
   supabase_flutter: ^2.5.4
+
+  # Variáveis de ambiente
   flutter_dotenv: ^5.2.0
+
+  # Internacionalização
   intl: ^0.18.1
+
+  # QR Code
   qr_code_scanner_plus: ^2.0.12
-  shared_preferences: ^2.3.2
   qr_flutter: ^4.1.0
-  flutter_secure_storage: ^9.2.2 # For saving data securely
-  local_auth: ^2.2.0            # For biometric authentication
+
+  # Armazenamento seguro
+  flutter_secure_storage: ^9.2.2
+
+  # Preferências locais
+  shared_preferences: ^2.3.2
+
+  # Autenticação biométrica
+  local_auth: ^2.2.0
+
+  # Compartilhar conteúdo
+  share_plus: ^12.0.0
 
 dev_dependencies:
   flutter_test:
