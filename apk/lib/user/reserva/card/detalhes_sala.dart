@@ -29,7 +29,6 @@ class DetalhesSalaPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Status da sala (ocupada ou livre) e cor do indicador
     final status = sala['ocupada'] == true ? "Ocupada" : "Livre";
     final statusColor = sala['ocupada'] == true ? Colors.red : Colors.green;
 
@@ -45,52 +44,38 @@ class DetalhesSalaPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Status da sala e capacidade
             Row(
               children: [
                 Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: statusColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(
-                    status,
-                    style: const TextStyle(color: Colors.white),
-                  ),
+                  child: Text(status, style: const TextStyle(color: Colors.white)),
                 ),
                 const SizedBox(width: 16),
                 Text('Capacidade: ${sala['capacidade'] ?? '-'}'),
               ],
             ),
             const SizedBox(height: 16),
-
-            // Localização (apenas botão clicável para abrir mapa)
             Row(
               children: [
                 ElevatedButton.icon(
                   icon: const Icon(Icons.map_outlined),
                   label: const Text('Ver no Mapa'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1ABC9C), // Cor do seu tema
+                    backgroundColor: const Color(0xFF1ABC9C),
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () {
-                    // Dados de exemplo da sala. No seu código real, estes
-                    // dados viriam do objeto da sala que o utilizador está a ver.
-                    const double latitudeDaSala = -26.9187;  // Ex: Coordenadas de Blumenau
-                    const double longitudeDaSala = -49.0661; // Ex: Coordenadas de Blumenau
-                    const String nomeDaSala = 'Sala de Reunião Alpha';
-
-                    // Comando para abrir a página do mapa
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => MapaSalaPage(
-                          latitude: -26.9187,
-                          longitude: -49.0661,
-                          nomeSala: 'Sala de Reunião Alpha',
+                          latitude: sala['latitude'] ?? -26.9187,
+                          longitude: sala['longitude'] ?? -49.0661,
+                          nomeSala: sala['nome'] ?? 'Sala',
                         ),
                       ),
                     );
@@ -99,25 +84,18 @@ class DetalhesSalaPage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-
-            // Descrição da sala
             Text(
               sala['descricao'] ?? '-',
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 32),
-
-            // Botão de reservar (ativa apenas se a sala estiver livre)
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: sala['ocupada'] == true
-                    ? null
-                    : () => _reservarSala(context),
+                onPressed: sala['ocupada'] == true ? null : () => _reservarSala(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2CC0AF),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: const Text(
