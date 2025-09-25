@@ -84,14 +84,16 @@ class _ConfigPageState extends State<ConfigPage> {
             title: const Text('Termos de Serviço'),
             leading: const Icon(Icons.description_outlined),
             onTap: () {
-              // TODO: Abrir link para os termos
+              // CORREÇÃO: Navega para a nova tela de termos de serviço.
+              Navigator.pushNamed(context, '/termos');
             },
           ),
           ListTile(
             title: const Text('Política de Privacidade'),
             leading: const Icon(Icons.privacy_tip_outlined),
             onTap: () {
-              // TODO: Abrir link para a política
+              // Navega para a nova tela de política de privacidade.
+              Navigator.pushNamed(context, '/politica');
             },
           ),
           const ListTile(
