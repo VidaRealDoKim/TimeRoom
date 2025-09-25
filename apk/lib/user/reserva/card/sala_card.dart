@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'detalhes_sala.dart';
 
 class SalaCard extends StatelessWidget {
-  final Map<String, dynamic>? sala; // para HomePage/DetalhesSalaPage
-  final Sala? salaObj; // para ReservasPage
+  final Map<String, dynamic>? sala; // usado em HomePage/DetalhesSalaPage
+  final Sala? salaObj; // usado em ReservasPage
   final DateTime dataSelecionada;
   final bool isFavorita;
   final VoidCallback onToggleFavorito;
-  final VoidCallback? onTap;
+  final VoidCallback? onTap; // se nulo, usa navegação padrão para DetalhesSalaPage
 
   const SalaCard({
     super.key,
@@ -19,6 +19,7 @@ class SalaCard extends StatelessWidget {
     this.onTap,
   });
 
+  /// Monta estrelas de avaliação
   Widget _buildEstrelas(double media) {
     return Row(
       children: List.generate(
@@ -34,7 +35,7 @@ class SalaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Decide se vai usar Map<String,dynamic> ou Sala
+    // Seleciona dados de Map ou Sala
     final imageUrl = sala != null ? sala!['url'] : salaObj?.url;
     final nome = sala != null ? sala!['nome'] : salaObj?.nome ?? '';
     final capacidade = sala != null ? sala!['capacidade'] : salaObj?.capacidade ?? 0;
@@ -46,10 +47,25 @@ class SalaCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 3,
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap ??
+                () {
+              // Se não houver onTap, navega para DetalhesSalaPage (somente se Map estiver disponível)
+              if (sala != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => DetalhesSalaPage(
+                      sala: sala!,
+                      dataSelecionada: dataSelecionada,
+                    ),
+                  ),
+                );
+              }
+            },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Imagem da sala + botão de favorito
             Stack(
               children: [
                 ClipRRect(
@@ -60,12 +76,16 @@ class SalaCard extends StatelessWidget {
                     height: 180,
                     width: double.infinity,
                     fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 180,
+                      color: Colors.grey[300],
+                      child: const Center(child: Icon(Icons.meeting_room, size: 50)),
+                    ),
                   )
                       : Container(
                     height: 180,
                     color: Colors.grey[300],
-                    child: const Center(
-                        child: Icon(Icons.meeting_room, size: 50)),
+                    child: const Center(child: Icon(Icons.meeting_room, size: 50)),
                   ),
                 ),
                 Positioned(
@@ -81,6 +101,7 @@ class SalaCard extends StatelessWidget {
                 ),
               ],
             ),
+            // Detalhes da sala
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
@@ -88,8 +109,7 @@ class SalaCard extends StatelessWidget {
                 children: [
                   Text(
                     nome,
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   Row(

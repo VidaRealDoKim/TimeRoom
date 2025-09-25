@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'nova_reserva.dart';
+import 'card/nova_reserva.dart';
 
 final supabase = Supabase.instance.client;
 
