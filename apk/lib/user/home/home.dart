@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../reserva/card/detalhes_sala.dart'; // Importando página de detalhes da sala
+import '../reserva/card/detalhes_sala.dart';
+import '../home/pesquisa/pesquisar.dart'; // Importando a tela de pesquisa
 
-// Instância global do Supabase
 final supabase = Supabase.instance.client;
 
 /// Modelo que representa uma Sala
@@ -49,19 +49,18 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<Sala> _salas = []; // Lista completa de salas
-  bool _isLoading = true; // Estado de carregamento
-  String searchQuery = ''; // Texto da pesquisa
-  DateTime _dataSelecionada = DateTime.now(); // Data selecionada
-  Set<String> favoritas = {}; // IDs de salas favoritas
-  String? userName; // Nome do usuário logado
+  List<Sala> _salas = [];
+  bool _isLoading = true;
+  DateTime _dataSelecionada = DateTime.now();
+  Set<String> favoritas = {};
+  String? userName;
 
   @override
   void initState() {
     super.initState();
-    _loadUserName(); // Carrega nome do usuário
-    _loadSalas(); // Carrega todas as salas
-    _loadFavoritas(); // Carrega favoritas do usuário
+    _loadUserName();
+    _loadSalas();
+    _loadFavoritas();
   }
 
   /// Carrega o nome do usuário logado
@@ -83,21 +82,19 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  /// Carrega a lista de salas do Supabase
+  /// Carrega a lista de salas
   Future<void> _loadSalas() async {
     try {
       final response = await supabase.from('salas').select();
       List<Sala> salas = [];
 
       for (final row in response) {
-        // Busca itens relacionados à sala
         final itensResponse = await supabase
             .from('salas_itens')
             .select('itens(nome)')
             .eq('sala_id', row['id']);
         final itens = itensResponse.map<String>((i) => i['itens']['nome'] as String).toList();
 
-        // Calcula média de avaliações da sala
         final avaliacoes = await supabase
             .from('feedback_salas')
             .select('nota')
@@ -121,7 +118,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  /// Carrega salas favoritas do usuário
+  /// Carrega salas favoritas
   Future<void> _loadFavoritas() async {
     try {
       final userId = supabase.auth.currentUser?.id;
@@ -138,7 +135,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  /// Abre o DatePicker para escolher a data
+  /// Abre DatePicker
   Future<void> _selecionarData(BuildContext context) async {
     final dataEscolhida = await showDatePicker(
       context: context,
@@ -163,7 +160,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// Alterna entre favoritar e desfavoritar a sala
+  /// Alterna favorito
   void _toggleFavorito(String salaId) async {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) return;
@@ -185,17 +182,11 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // Tela de carregamento
     if (_isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
-
-    // Filtra salas conforme pesquisa
-    final filteredSalas = _salas
-        .where((s) => s.nome.toLowerCase().contains(searchQuery.toLowerCase()))
-        .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -208,7 +199,7 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Card de resumo das salas disponíveis
+            // Resumo de salas
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -253,21 +244,39 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 16),
 
-            // Campo de pesquisa inline
-            TextField(
-              decoration: InputDecoration(
-                hintText: "Pesquisar por nome",
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                border: OutlineInputBorder(
+            // Campo de pesquisa que leva para SearchPage
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SearchPage()),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: const [
+                    Icon(Icons.search, color: Colors.grey),
+                    SizedBox(width: 8),
+                    Text(
+                      "Pesquisar por nome",
+                      style: TextStyle(color: Colors.grey, fontSize: 16),
+                    ),
+                  ],
                 ),
               ),
-              onChanged: (value) => setState(() => searchQuery = value),
             ),
             const SizedBox(height: 16),
 
@@ -275,7 +284,7 @@ class _HomePageState extends State<HomePage> {
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: filteredSalas.length,
+              itemCount: _salas.length,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 crossAxisSpacing: 12,
@@ -283,7 +292,7 @@ class _HomePageState extends State<HomePage> {
                 childAspectRatio: 0.8,
               ),
               itemBuilder: (context, index) {
-                final sala = filteredSalas[index];
+                final sala = _salas[index];
                 return _buildSalaCard(sala);
               },
             ),
@@ -293,14 +302,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// Card que exibe as informações da sala
+  /// Card da sala
   Widget _buildSalaCard(Sala sala) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 3,
       child: InkWell(
         onTap: () {
-          // Ao clicar, abre a página de detalhes da sala
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -313,7 +321,7 @@ class _HomePageState extends State<HomePage> {
                   'url': sala.url,
                   'descricao': sala.itens.join(', '),
                   'media_avaliacoes': sala.mediaAvaliacoes,
-                  'ocupada': false, // Pode ajustar conforme sua lógica
+                  'ocupada': false,
                 },
                 dataSelecionada: _dataSelecionada,
               ),
@@ -323,7 +331,6 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Imagem da sala + botão de favorito
             Expanded(
               child: Stack(
                 children: [
@@ -357,8 +364,6 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
-
-            // Informações da sala
             Padding(
               padding: const EdgeInsets.all(8),
               child: Column(
