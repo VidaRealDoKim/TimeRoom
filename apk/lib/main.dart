@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'user/perfil/termos_page.dart';
+import 'user/perfil/politica_privacidade_page.dart';
 
 // -----------------------------------------------------------------------------
 // Importações internas (telas principais do projeto)
@@ -83,6 +85,8 @@ class MyApp extends StatelessWidget {
         '/perfil': (context) => const PerfilPage(),
         '/salas': (context) => const SalasFavoritasPage(),
         '/config': (context) => const ConfigPage(),
+        '/termos': (context) => const TermosPage(),
+        '/politica': (context) => const PoliticaPrivacidadePage(),
 
         // Telas Admin
         '/admindashboard': (context) => const AdminDashboardPage(),
