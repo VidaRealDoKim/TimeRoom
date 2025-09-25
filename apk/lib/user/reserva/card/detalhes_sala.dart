@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../perfil/mapa_sala_page.dart';
 import 'nova_reserva.dart';
 
 /// Página de detalhes da sala
@@ -69,19 +70,31 @@ class DetalhesSalaPage extends StatelessWidget {
             Row(
               children: [
                 ElevatedButton.icon(
-                  onPressed: () {
-                    // Aqui será implementado o abrir do Google Maps
-                  },
-                  icon: const Icon(Icons.location_on),
-                  label: Text(sala['localizacao'] ?? 'Localização'),
+                  icon: const Icon(Icons.map_outlined),
+                  label: const Text('Ver no Mapa'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                    backgroundColor: const Color(0xFF1ABC9C), // Cor do seu tema
+                    foregroundColor: Colors.white,
                   ),
+                  onPressed: () {
+                    // Dados de exemplo da sala. No seu código real, estes
+                    // dados viriam do objeto da sala que o utilizador está a ver.
+                    const double latitudeDaSala = -26.9187;  // Ex: Coordenadas de Blumenau
+                    const double longitudeDaSala = -49.0661; // Ex: Coordenadas de Blumenau
+                    const String nomeDaSala = 'Sala de Reunião Alpha';
+
+                    // Comando para abrir a página do mapa
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MapaSalaPage(
+                          latitude: -26.9187,
+                          longitude: -49.0661,
+                          nomeSala: 'Sala de Reunião Alpha',
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
