@@ -5,10 +5,8 @@ import 'criar/criar.dart';
 import 'usuarios/admin_usuarios.dart';
 import 'home/admin_home.dart';
 
-/// Instância do Supabase
 final supabase = Supabase.instance.client;
 
-/// Página principal do Painel Administrativo
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
 
@@ -21,12 +19,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   bool loading = true;
   int _selectedIndex = 0;
 
-  /// Lista de páginas exibidas nas abas
-  final List<Widget> _pages = const [
-    AdminHomePage(),     // Aba 0 - Início
-    AdminSalasPage(),    // Aba 1 - Listar/Editar Salas
-    CriarSalaPage(),     // Aba 2 - Criar Sala (nova aba)
-    AdminUsuariosPage(), // Aba 3 - Usuários
+  final List<Widget> _pages = [
+    const AdminHomePage(),     // Aba 0 - Início
+    const AdminSalasPage(),    // Aba 1 - Salas
+    const AdminUsuariosPage(), // Aba 2 - Usuários
+    const Center(child: Text("Itens")), // Aba 3 - Itens
   ];
 
   @override
@@ -63,16 +60,21 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     setState(() => _selectedIndex = index);
   }
 
+  void _openCriarSala() {
+    Navigator.push(
+        context, MaterialPageRoute(builder: (_) => const CriarSalaPage()));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        centerTitle: true, // <-- Centraliza a logo
+        centerTitle: true,
         title: Image.asset(
           "assets/LogoHorizontal.png",
-          height: 30, // ajusta o tamanho da logo
+          height: 30,
           fit: BoxFit.contain,
         ),
         actions: const [
@@ -87,7 +89,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         ],
         iconTheme: const IconThemeData(color: Colors.black87),
       ),
-
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -123,7 +124,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               title: const Text("Dashboard"),
               onTap: () {
                 Navigator.pop(context);
-                setState(() => _selectedIndex = 0);
+                _onItemTapped(0);
               },
             ),
             ListTile(
@@ -131,15 +132,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               title: const Text("Salas"),
               onTap: () {
                 Navigator.pop(context);
-                setState(() => _selectedIndex = 1);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.add_business),
-              title: const Text("Criar Sala"),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _selectedIndex = 2);
+                _onItemTapped(1);
               },
             ),
             ListTile(
@@ -147,7 +140,15 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               title: const Text("Usuários"),
               onTap: () {
                 Navigator.pop(context);
-                setState(() => _selectedIndex = 3);
+                _onItemTapped(2);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.inventory_2),
+              title: const Text("Itens"),
+              onTap: () {
+                Navigator.pop(context);
+                _onItemTapped(3);
               },
             ),
             const Divider(),
@@ -159,34 +160,78 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           ],
         ),
       ),
-
       body: _pages[_selectedIndex],
-
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        selectedItemColor: const Color(0xFF00796B),
-        unselectedItemColor: Colors.white,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openCriarSala,
         backgroundColor: const Color(0xFF1ABC9C),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: "Início",
+        child: const Icon(Icons.add, size: 32),
+      ),
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 6,
+        color: const Color(0xFF1ABC9C),
+        child: SizedBox(
+          height: 60,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              // Home
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _onItemTapped(0),
+                  borderRadius: BorderRadius.circular(30),
+                  splashColor: Colors.white24,
+                  child: const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Icon(Icons.home, color: Colors.white),
+                  ),
+                ),
+              ),
+              // Salas
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _onItemTapped(1),
+                  borderRadius: BorderRadius.circular(30),
+                  splashColor: Colors.white24,
+                  child: const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Icon(Icons.meeting_room, color: Colors.white),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 48), // espaço para FAB
+              // Itens
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _onItemTapped(3),
+                  borderRadius: BorderRadius.circular(30),
+                  splashColor: Colors.white24,
+                  child: const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Icon(Icons.inventory_2, color: Colors.white),
+                  ),
+                ),
+              ),
+              // Perfil
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _onItemTapped(2),
+                  borderRadius: BorderRadius.circular(30),
+                  splashColor: Colors.white24,
+                  child: const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Icon(Icons.person, color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.meeting_room),
-            label: "Salas",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_business),
-            label: "Criar Sala",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: "Usuários",
-          ),
-        ],
+        ),
       ),
     );
   }
