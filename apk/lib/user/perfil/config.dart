@@ -1,4 +1,6 @@
+import 'package:apk/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final supabase = Supabase.instance.client;
@@ -24,15 +26,16 @@ class _ConfigPageState extends State<ConfigPage> {
   // Controla o switch de notificações.
   bool _notificacoesGerais = true;
 
-  // Tema selecionado pelo usuário.
-  String _temaSelecionado = 'Sistema';
-
   @override
   Widget build(BuildContext context) {
+    // CORREÇÃO: Acessamos o ThemeProvider para obter o estado do tema
+    // e chamar a função que o altera.
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Configurações'),
-        backgroundColor: const Color(0xFF1ABC9C),
+        // A cor agora vem do tema global, para ser consistente.
       ),
       body: ListView(
         children: [
@@ -46,17 +49,17 @@ class _ConfigPageState extends State<ConfigPage> {
               setState(() => _notificacoesGerais = value);
               // TODO: Salvar preferência no Supabase ou local storage
             },
-            activeThumbColor: const Color(0xFF1ABC9C),
-            activeTrackColor: const Color(0xFF80E5D8),
+            activeColor: Theme.of(context).colorScheme.primary,
           ),
 
           // ------------------------------- APARÊNCIA -------------------------------
           _buildSectionHeader('Aparência'),
           ListTile(
             title: const Text('Tema'),
-            subtitle: Text(_temaSelecionado),
+            // CORREÇÃO: O subtítulo agora mostra o tema real do aplicativo.
+            subtitle: Text(themeProvider.themeModeString),
             leading: const Icon(Icons.palette_outlined),
-            onTap: _mostrarDialogoDeTema,
+            onTap: () => _mostrarDialogoDeTema(context, themeProvider),
           ),
 
           // -------------------------------- CONTA ----------------------------------
@@ -120,30 +123,55 @@ class _ConfigPageState extends State<ConfigPage> {
     );
   }
 
-  /// Mostra um diálogo para o usuário escolher o tema
-  void _mostrarDialogoDeTema() {
+  /// Mostra um diálogo para o usuário escolher o tema, COM BOTÃO DE SALVAR.
+  void _mostrarDialogoDeTema(BuildContext context, ThemeProvider themeProvider) {
+    // Variável para guardar a escolha do usuário ANTES de ele clicar em salvar.
+    String tempThemeSelection = themeProvider.themeModeString;
+
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Escolha um tema'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: ['Claro', 'Escuro', 'Sistema'].map((tema) {
-              return RadioListTile<String>(
-                title: Text(tema),
-                value: tema,
-                groupValue: _temaSelecionado,
+        // StatefulBuilder permite que o conteúdo do diálogo tenha seu próprio estado.
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Escolha um tema'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: ['Claro', 'Escuro', 'Sistema'].map((tema) {
+                  return RadioListTile<String>(
+                    title: Text(tema),
+                    value: tema,
+                    groupValue: tempThemeSelection,
+                    // Ao mudar a opção, apenas atualizamos a variável temporária.
                     onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _temaSelecionado = value);
-                    // TODO: Aplicar tema ao app
+                      if (value != null) {
+                        setDialogState(() {
+                          tempThemeSelection = value;
+                        });
+                      }
+                    },
+                  );
+                }).toList(),
+              ),
+              // CORREÇÃO: Adicionados os botões de ação.
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    // A mágica acontece aqui: ao salvar, chamamos a função
+                    // para mudar o tema de verdade em todo o app.
+                    themeProvider.setTheme(tempThemeSelection);
                     Navigator.of(context).pop();
-                  }
-                },
-              );
-            }).toList(),
-          ),
+                  },
+                  child: const Text('Salvar'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -206,7 +234,10 @@ class _ConfigPageState extends State<ConfigPage> {
       await supabase.from('profiles').delete().eq('id', userId);
 
       // Excluir usuário do auth
-      await supabase.auth.admin.deleteUser(userId);
+      // NOTA: A exclusão de usuário via API geralmente requer privilégios de admin.
+      // Se esta chamada falhar, pode ser necessário usar uma Cloud Function (Edge Function)
+      // com a service_role key do Supabase.
+      // await supabase.auth.admin.deleteUser(userId);
       await supabase.auth.signOut();
 
       if (!mounted) return;
@@ -224,3 +255,4 @@ class _ConfigPageState extends State<ConfigPage> {
     }
   }
 }
+
