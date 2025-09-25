@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'card/nova_reserva.dart';
+// CORREÇÃO: Importa a página de DETALHES, para onde devemos navegar primeiro.
+import 'card/detalhes_sala.dart';
 
 final supabase = Supabase.instance.client;
 
+// --- CORREÇÃO 1: Adicionar latitude e longitude ao modelo de dados ---
 class Sala {
   final String id;
   final String nome;
@@ -13,6 +15,9 @@ class Sala {
   final String? url;
   final List<String> itens;
   final double mediaAvaliacoes;
+  // Adicionadas as propriedades para guardar as coordenadas.
+  final double? latitude;
+  final double? longitude;
 
   Sala({
     required this.id,
@@ -22,6 +27,9 @@ class Sala {
     this.url,
     required this.itens,
     required this.mediaAvaliacoes,
+    // Adicionados ao construtor.
+    this.latitude,
+    this.longitude,
   });
 
   factory Sala.fromJson(Map<String, dynamic> json, List<String> itens, double media) {
@@ -33,6 +41,10 @@ class Sala {
       url: json['url'],
       itens: itens,
       mediaAvaliacoes: media,
+      // CORREÇÃO 2: Extrair latitude e longitude do JSON que vem do Supabase.
+      // O 'tryParse' ajuda a evitar erros se o valor não for um número.
+      latitude: double.tryParse(json['latitude']?.toString() ?? ''),
+      longitude: double.tryParse(json['longitude']?.toString() ?? ''),
     );
   }
 }
@@ -59,18 +71,25 @@ class _ReservasPageState extends State<ReservasPage> {
 
   Future<void> _loadSalas() async {
     try {
-      final response = await supabase.from('salas').select();
+      // --- CORREÇÃO 3: Garantir que estamos a pedir TODAS as colunas ---
+      // Usar o '*' garante que as novas colunas 'latitude' e 'longitude' serão incluídas.
+      final response = await supabase.from('salas').select('*');
       List<Sala> salas = [];
 
       for (final row in response) {
-        // Itens da sala
+        // --- TESTE DE DEPURACÃO ---
+        // Vamos imprimir os dados brutos que vêm do Supabase para cada sala.
+        // Verifique na aba "Run" do Android Studio se as chaves 'latitude' e 'longitude'
+        // aparecem aqui e se têm os valores corretos.
+        debugPrint("Dados da sala recebidos do Supabase: $row");
+
+        // O resto da sua lógica para buscar itens e avaliações está perfeita.
         final itensResponse = await supabase
             .from('salas_itens')
             .select('itens(nome)')
             .eq('sala_id', row['id']);
         final itens = itensResponse.map<String>((i) => i['itens']['nome'] as String).toList();
 
-        // Média das avaliações
         final avaliacoes = await supabase
             .from('feedback_salas')
             .select('nota')
@@ -196,18 +215,24 @@ class _ReservasPageState extends State<ReservasPage> {
       elevation: 3,
       child: InkWell(
         onTap: () {
+          // --- CORREÇÃO 4: Navegar para a PÁGINA DE DETALHES e passar os dados ---
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => NovaReservaPage(
+              builder: (_) => DetalhesSalaPage(
+                // O DetalhesSalaPage espera um Map, então convertemos o nosso objeto Sala.
                 sala: {
                   'id': sala.id,
                   'nome': sala.nome,
                   'capacidade': sala.capacidade,
                   'localizacao': sala.localizacao,
                   'url': sala.url,
-                  'descricao': sala.itens.join(', '),
+                  'descricao': sala.itens.join(', '), // Exemplo de descrição
                   'media_avaliacoes': sala.mediaAvaliacoes,
+                  'ocupada': false, // Adicionar lógica se necessário
+                  // O mais importante: passar as coordenadas!
+                  'latitude': sala.latitude,
+                  'longitude': sala.longitude,
                 },
                 dataSelecionada: _dataSelecionada,
               ),
@@ -293,3 +318,4 @@ class _ReservasPageState extends State<ReservasPage> {
     );
   }
 }
+

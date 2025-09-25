@@ -77,20 +77,21 @@ class DetalhesSalaPage extends StatelessWidget {
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () {
-                    // Dados de exemplo da sala. No seu código real, estes
-                    // dados viriam do objeto da sala que o utilizador está a ver.
-                    const double latitudeDaSala = -26.9187;  // Ex: Coordenadas de Blumenau
-                    const double longitudeDaSala = -49.0661; // Ex: Coordenadas de Blumenau
-                    const String nomeDaSala = 'Sala de Reunião Alpha';
+                    // --- CORREÇÃO APLICADA AQUI ---
+                    // Usamos os dados REAIS do objeto 'sala' que a página recebeu.
+                    // Usamos '??' como uma segurança para evitar erros se os dados não existirem.
+                    final double latitudeDaSala = sala['latitude'] ?? 0.0;
+                    final double longitudeDaSala = sala['longitude'] ?? 0.0;
+                    final String nomeDaSala = sala['nome'] ?? 'Localização Desconhecida';
 
-                    // Comando para abrir a página do mapa
+                    // Comando para abrir a página do mapa com os dados corretos.
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => MapaSalaPage(
-                          latitude: -26.9187,
-                          longitude: -49.0661,
-                          nomeSala: 'Sala de Reunião Alpha',
+                          latitude: latitudeDaSala,
+                          longitude: longitudeDaSala,
+                          nomeSala: nomeDaSala,
                         ),
                       ),
                     );

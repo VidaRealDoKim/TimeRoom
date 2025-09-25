@@ -12,6 +12,10 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
+        <!-- ADICIONE ESTAS LINHAS AQUI -->
+        <meta-data android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyAko7Pwwypl0LEXIa3p6b8n_ghDb5OHeQs"/>
+
         <!-- =======================
              Activity principal do Flutter
              Configurações para tema, launchMode e mudanças de configuração

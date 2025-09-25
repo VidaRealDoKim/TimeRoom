@@ -7,7 +7,8 @@ plugins {
 
 android {
     namespace = "com.example.apk"
-    compileSdk = flutter.compileSdkVersion
+    // CORREÇÃO: Atualizado para a versão mais alta exigida pelos plugins.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -42,3 +43,4 @@ android {
 flutter {
     source = "../.."
 }
+
