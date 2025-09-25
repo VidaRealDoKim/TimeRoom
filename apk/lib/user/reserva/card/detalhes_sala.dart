@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'nova_reserva.dart';
-import 'sala_card.dart'; // importando SalaCard
-
-final supabase = Supabase.instance.client;
 
 /// Página de detalhes da sala
+/// Recebe um Map com os dados da sala e a data selecionada
 class DetalhesSalaPage extends StatelessWidget {
   final Map<String, dynamic> sala;
   final DateTime dataSelecionada;
@@ -16,7 +13,7 @@ class DetalhesSalaPage extends StatelessWidget {
     required this.dataSelecionada,
   });
 
-  /// Navega para NovaReservaPage
+  /// Função para navegar para a página de reserva
   void _reservarSala(BuildContext context) async {
     await Navigator.push(
       context,
@@ -31,6 +28,7 @@ class DetalhesSalaPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Status da sala (ocupada ou livre) e cor do indicador
     final status = sala['ocupada'] == true ? "Ocupada" : "Livre";
     final statusColor = sala['ocupada'] == true ? Colors.red : Colors.green;
 
@@ -46,22 +44,12 @@ class DetalhesSalaPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Card da sala usando SalaCard
-            SalaCard(
-              sala: sala,
-              dataSelecionada: dataSelecionada,
-              isFavorita: false,
-              onToggleFavorito: () {
-                // Aqui você pode implementar salvar/remover favoritos
-              },
-              onTap: null, // já estamos na página de detalhes
-            ),
-            const SizedBox(height: 16),
-            // Status da sala e informações adicionais
+            // Status da sala e capacidade
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: statusColor,
                     borderRadius: BorderRadius.circular(12),
@@ -75,18 +63,48 @@ class DetalhesSalaPage extends StatelessWidget {
                 Text('Capacidade: ${sala['capacidade'] ?? '-'}'),
               ],
             ),
-            const SizedBox(height: 8),
-            Text('Localização: ${sala['localizacao'] ?? '-'}'),
-            const SizedBox(height: 8),
-            Text('Descrição: ${sala['descricao'] ?? '-'}'),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
+
+            // Localização (apenas botão clicável para abrir mapa)
+            Row(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // Aqui será implementado o abrir do Google Maps
+                  },
+                  icon: const Icon(Icons.location_on),
+                  label: Text(sala['localizacao'] ?? 'Localização'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Descrição da sala
+            Text(
+              sala['descricao'] ?? '-',
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 32),
+
+            // Botão de reservar (ativa apenas se a sala estiver livre)
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: sala['ocupada'] == true ? null : () => _reservarSala(context),
+                onPressed: sala['ocupada'] == true
+                    ? null
+                    : () => _reservarSala(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2CC0AF),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: const Text(

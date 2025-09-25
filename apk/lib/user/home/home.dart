@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../reserva/card/nova_reserva.dart';
-import '../home/pesquisa/pesquisar.dart'; // <- nova tela de pesquisa
+import '../reserva/card/detalhes_sala.dart'; // Importando página de detalhes da sala
 
 // Instância global do Supabase
 final supabase = Supabase.instance.client;
@@ -27,7 +26,7 @@ class Sala {
     required this.mediaAvaliacoes,
   });
 
-  /// Construtor a partir de JSON (dados vindos do Supabase)
+  /// Construtor a partir de JSON (dados do Supabase)
   factory Sala.fromJson(Map<String, dynamic> json, List<String> itens, double media) {
     return Sala(
       id: json['id'],
@@ -41,7 +40,7 @@ class Sala {
   }
 }
 
-/// Tela principal (HomePage)
+/// Tela principal do aplicativo
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -50,30 +49,19 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Lista de salas carregadas do Supabase
-  List<Sala> _salas = [];
-
-  // Estado de carregamento
-  bool _isLoading = true;
-
-  // Texto pesquisado
-  String searchQuery = '';
-
-  // Data selecionada pelo usuário
-  DateTime _dataSelecionada = DateTime.now();
-
-  // Conjunto de IDs das salas favoritas
-  Set<String> favoritas = {};
-
-  // Nome do usuário autenticado
-  String? userName;
+  List<Sala> _salas = []; // Lista completa de salas
+  bool _isLoading = true; // Estado de carregamento
+  String searchQuery = ''; // Texto da pesquisa
+  DateTime _dataSelecionada = DateTime.now(); // Data selecionada
+  Set<String> favoritas = {}; // IDs de salas favoritas
+  String? userName; // Nome do usuário logado
 
   @override
   void initState() {
     super.initState();
-    _loadUserName();
-    _loadSalas();
-    _loadFavoritas();
+    _loadUserName(); // Carrega nome do usuário
+    _loadSalas(); // Carrega todas as salas
+    _loadFavoritas(); // Carrega favoritas do usuário
   }
 
   /// Carrega o nome do usuário logado
@@ -95,21 +83,21 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  /// Carrega a lista de salas
+  /// Carrega a lista de salas do Supabase
   Future<void> _loadSalas() async {
     try {
       final response = await supabase.from('salas').select();
       List<Sala> salas = [];
 
       for (final row in response) {
-        // Busca os itens da sala
+        // Busca itens relacionados à sala
         final itensResponse = await supabase
             .from('salas_itens')
             .select('itens(nome)')
             .eq('sala_id', row['id']);
         final itens = itensResponse.map<String>((i) => i['itens']['nome'] as String).toList();
 
-        // Calcula a média das avaliações
+        // Calcula média de avaliações da sala
         final avaliacoes = await supabase
             .from('feedback_salas')
             .select('nota')
@@ -133,7 +121,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  /// Carrega as salas favoritas do usuário
+  /// Carrega salas favoritas do usuário
   Future<void> _loadFavoritas() async {
     try {
       final userId = supabase.auth.currentUser?.id;
@@ -150,7 +138,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  /// Abre o DatePicker para escolher uma data
+  /// Abre o DatePicker para escolher a data
   Future<void> _selecionarData(BuildContext context) async {
     final dataEscolhida = await showDatePicker(
       context: context,
@@ -158,10 +146,7 @@ class _HomePageState extends State<HomePage> {
       firstDate: DateTime.now(),
       lastDate: DateTime(2030),
     );
-
-    if (dataEscolhida != null) {
-      setState(() => _dataSelecionada = dataEscolhida);
-    }
+    if (dataEscolhida != null) setState(() => _dataSelecionada = dataEscolhida);
   }
 
   /// Exibe estrelas de avaliação
@@ -178,27 +163,23 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// Alterna entre favoritar e desfavoritar uma sala
+  /// Alterna entre favoritar e desfavoritar a sala
   void _toggleFavorito(String salaId) async {
-    try {
-      final userId = supabase.auth.currentUser?.id;
-      if (userId == null) return;
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) return;
 
-      if (favoritas.contains(salaId)) {
-        await supabase
-            .from('salas_favoritas')
-            .delete()
-            .match({'usuario_id': userId, 'sala_id': salaId});
-        setState(() => favoritas.remove(salaId));
-      } else {
-        await supabase.from('salas_favoritas').insert({
-          'usuario_id': userId,
-          'sala_id': salaId,
-        });
-        setState(() => favoritas.add(salaId));
-      }
-    } catch (e) {
-      debugPrint("Erro ao favoritar: $e");
+    if (favoritas.contains(salaId)) {
+      await supabase
+          .from('salas_favoritas')
+          .delete()
+          .match({'usuario_id': userId, 'sala_id': salaId});
+      setState(() => favoritas.remove(salaId));
+    } else {
+      await supabase.from('salas_favoritas').insert({
+        'usuario_id': userId,
+        'sala_id': salaId,
+      });
+      setState(() => favoritas.add(salaId));
     }
   }
 
@@ -211,59 +192,96 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    // Filtra as salas pelo texto pesquisado
+    // Filtra salas conforme pesquisa
     final filteredSalas = _salas
         .where((s) => s.nome.toLowerCase().contains(searchQuery.toLowerCase()))
         .toList();
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: Text("Bem-vindo${userName != null ? ', $userName' : ''}!"),
-        backgroundColor: const Color(0xFFFFFFFF),
+        title: Text("Olá${userName != null ? ', $userName' : ''}!"),
+        backgroundColor: const Color(0xFF2CC0AF),
+        elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // 🔎 Campo de pesquisa -> abre a tela de busca
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SearchPage()),
-                );
-              },
-              child: AbsorbPointer(
-                child: TextField(
-                  decoration: const InputDecoration(
-                    hintText: "Pesquisar por nome",
-                    prefixIcon: Icon(Icons.search),
+            // Card de resumo das salas disponíveis
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2CC0AF),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Salas disponíveis",
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                      Text(
+                        "${_salas.length}",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+                  ElevatedButton.icon(
+                    onPressed: () => _selecionarData(context),
+                    icon: const Icon(Icons.date_range, color: Colors.white),
+                    label: Text(
+                      DateFormat('dd/MM/yyyy').format(_dataSelecionada),
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white24,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
 
-            // 📅 Botão para escolher data
-            Row(
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () => _selecionarData(context),
-                  icon: const Icon(Icons.date_range),
-                  label: Text(DateFormat('dd/MM/yyyy').format(_dataSelecionada)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2CC0AF),
-                  ),
+            // Campo de pesquisa inline
+            TextField(
+              decoration: InputDecoration(
+                hintText: "Pesquisar por nome",
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
                 ),
-              ],
+              ),
+              onChanged: (value) => setState(() => searchQuery = value),
             ),
             const SizedBox(height: 16),
 
-            // Lista de salas
-            ListView.builder(
+            // Grid de salas
+            GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: filteredSalas.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.8,
+              ),
               itemBuilder: (context, index) {
                 final sala = filteredSalas[index];
                 return _buildSalaCard(sala);
@@ -279,15 +297,14 @@ class _HomePageState extends State<HomePage> {
   Widget _buildSalaCard(Sala sala) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      margin: const EdgeInsets.only(bottom: 16),
       elevation: 3,
       child: InkWell(
         onTap: () {
-          // Abre a tela de reserva ao clicar na sala
+          // Ao clicar, abre a página de detalhes da sala
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => NovaReservaPage(
+              builder: (_) => DetalhesSalaPage(
                 sala: {
                   'id': sala.id,
                   'nome': sala.nome,
@@ -296,6 +313,7 @@ class _HomePageState extends State<HomePage> {
                   'url': sala.url,
                   'descricao': sala.itens.join(', '),
                   'media_avaliacoes': sala.mediaAvaliacoes,
+                  'ocupada': false, // Pode ajustar conforme sua lógica
                 },
                 dataSelecionada: _dataSelecionada,
               ),
@@ -306,75 +324,61 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Imagem da sala + botão de favorito
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: sala.url != null
-                      ? Image.network(
-                    sala.url!,
-                    height: 180,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  )
-                      : Container(
-                    height: 180,
-                    color: Colors.grey[300],
-                    child: const Center(
-                        child: Icon(Icons.meeting_room, size: 50)),
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: IconButton(
-                    icon: Icon(
-                      favoritas.contains(sala.id)
-                          ? Icons.favorite
-                          : Icons.favorite_border,
-                      color: Colors.red,
+            Expanded(
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    child: sala.url != null
+                        ? Image.network(
+                      sala.url!,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    )
+                        : Container(
+                      color: Colors.grey[300],
+                      child: const Center(
+                          child: Icon(Icons.meeting_room, size: 50)),
                     ),
-                    onPressed: () => _toggleFavorito(sala.id),
                   ),
-                ),
-              ],
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: IconButton(
+                      icon: Icon(
+                        favoritas.contains(sala.id)
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        color: Colors.red,
+                      ),
+                      onPressed: () => _toggleFavorito(sala.id),
+                    ),
+                  ),
+                ],
+              ),
             ),
 
             // Informações da sala
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     sala.nome,
                     style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
+                        fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                      const Icon(Icons.location_on, size: 14, color: Colors.grey),
                       const SizedBox(width: 4),
-                      Text(
-                        sala.localizacao ?? '-',
-                        style: const TextStyle(color: Colors.grey),
-                      ),
+                      Text(sala.localizacao ?? '-', style: const TextStyle(color: Colors.grey, fontSize: 12)),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text("Capacidade: ${sala.capacidade}"),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      _buildEstrelas(sala.mediaAvaliacoes),
-                      const SizedBox(width: 8),
-                      Text(
-                        "(${sala.itens.length} avaliações)",
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                    ],
-                  ),
+                  _buildEstrelas(sala.mediaAvaliacoes),
                 ],
               ),
             ),
