@@ -45,53 +45,38 @@ class DetalhesSalaPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Status da sala e capacidade
             Row(
               children: [
                 Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: statusColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(
-                    status,
-                    style: const TextStyle(color: Colors.white),
-                  ),
+                  child: Text(status, style: const TextStyle(color: Colors.white)),
                 ),
                 const SizedBox(width: 16),
                 Text('Capacidade: ${sala['capacidade'] ?? '-'}'),
               ],
             ),
             const SizedBox(height: 16),
-
-            // Localização (apenas botão clicável para abrir mapa)
             Row(
               children: [
                 ElevatedButton.icon(
                   icon: const Icon(Icons.map_outlined),
                   label: const Text('Ver no Mapa'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1ABC9C), // Cor do seu tema
+                    backgroundColor: const Color(0xFF1ABC9C),
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () {
-                    // --- CORREÇÃO APLICADA AQUI ---
-                    // Usamos os dados REAIS do objeto 'sala' que a página recebeu.
-                    // Usamos '??' como uma segurança para evitar erros se os dados não existirem.
-                    final double latitudeDaSala = sala['latitude'] ?? 0.0;
-                    final double longitudeDaSala = sala['longitude'] ?? 0.0;
-                    final String nomeDaSala = sala['nome'] ?? 'Localização Desconhecida';
-
-                    // Comando para abrir a página do mapa com os dados corretos.
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => MapaSalaPage(
-                          latitude: latitudeDaSala,
-                          longitude: longitudeDaSala,
-                          nomeSala: nomeDaSala,
+                          latitude: sala['latitude'] ?? -26.9187,
+                          longitude: sala['longitude'] ?? -49.0661,
+                          nomeSala: sala['nome'] ?? 'Sala',
                         ),
                       ),
                     );
@@ -100,25 +85,18 @@ class DetalhesSalaPage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-
-            // Descrição da sala
             Text(
               sala['descricao'] ?? '-',
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 32),
-
-            // Botão de reservar (ativa apenas se a sala estiver livre)
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: sala['ocupada'] == true
-                    ? null
-                    : () => _reservarSala(context),
+                onPressed: sala['ocupada'] == true ? null : () => _reservarSala(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2CC0AF),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: const Text(

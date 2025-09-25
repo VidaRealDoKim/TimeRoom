@@ -26,7 +26,13 @@ class CookieConsent {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
       ),
       builder: (context) => Container(
-        padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 16.0),
+        // --- FIXED: Added dynamic bottom padding to avoid system navigation bar ---
+        padding: EdgeInsets.fromLTRB(
+          24.0,
+          24.0,
+          24.0,
+          16.0 + MediaQuery.of(context).viewPadding.bottom, // This adds space for the phone's bottom bar
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,7 +43,6 @@ class CookieConsent {
             ),
             const SizedBox(height: 16.0),
 
-            // Texto com link para a página de política
             RichText(
               text: TextSpan(
                 style: const TextStyle(fontSize: 15, color: Colors.black54, height: 1.5),
@@ -67,7 +72,6 @@ class CookieConsent {
 
             const SizedBox(height: 24.0),
 
-            // Botões
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
