@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// --- NEW: Import the QR Code screen ---
+// Make sure this path is correct for your project structure
+import 'qrcode.dart';
+
 final supabase = Supabase.instance.client;
 
 /// Tela para editar uma sala existente, gerenciar seus itens e horários
@@ -237,6 +241,25 @@ class _EditarSalaPageState extends State<EditarSalaPage> {
       appBar: AppBar(
         title: const Text("Editar Sala"),
         backgroundColor: const Color(0xFF1ABC9C),
+        // --- NEW: Add the actions property for the QR code button ---
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.import_contacts), // QR Code Icon
+            tooltip: 'Gerar QR Code da Sala', // Text that appears on long press
+            onPressed: () {
+              // Get the unique ID of the current room
+              final String salaId = widget.sala['id'].toString();
+
+              // Navigate to the QRCodeScreen, passing the room ID as data
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => QRCodeScreen(qrData: salaId),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
