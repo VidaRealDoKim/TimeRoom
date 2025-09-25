@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../reserva/nova_reserva.dart';
+import '../reserva/card/nova_reserva.dart';
+import '../home/pesquisa/pesquisar.dart'; // <- nova tela de pesquisa
 
+// Instância global do Supabase
 final supabase = Supabase.instance.client;
 
+/// Modelo que representa uma Sala
 class Sala {
   final String id;
   final String nome;
@@ -24,6 +27,7 @@ class Sala {
     required this.mediaAvaliacoes,
   });
 
+  /// Construtor a partir de JSON (dados vindos do Supabase)
   factory Sala.fromJson(Map<String, dynamic> json, List<String> itens, double media) {
     return Sala(
       id: json['id'],
@@ -37,6 +41,7 @@ class Sala {
   }
 }
 
+/// Tela principal (HomePage)
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -45,11 +50,22 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  // Lista de salas carregadas do Supabase
   List<Sala> _salas = [];
+
+  // Estado de carregamento
   bool _isLoading = true;
+
+  // Texto pesquisado
   String searchQuery = '';
+
+  // Data selecionada pelo usuário
   DateTime _dataSelecionada = DateTime.now();
+
+  // Conjunto de IDs das salas favoritas
   Set<String> favoritas = {};
+
+  // Nome do usuário autenticado
   String? userName;
 
   @override
@@ -60,11 +76,16 @@ class _HomePageState extends State<HomePage> {
     _loadFavoritas();
   }
 
+  /// Carrega o nome do usuário logado
   Future<void> _loadUserName() async {
     try {
       final userId = supabase.auth.currentUser?.id;
       if (userId != null) {
-        final profile = await supabase.from('profiles').select('name').eq('id', userId).single();
+        final profile = await supabase
+            .from('profiles')
+            .select('name')
+            .eq('id', userId)
+            .single();
         setState(() {
           userName = profile['name'] as String?;
         });
@@ -74,20 +95,21 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  /// Carrega a lista de salas
   Future<void> _loadSalas() async {
     try {
       final response = await supabase.from('salas').select();
       List<Sala> salas = [];
 
       for (final row in response) {
-        // Itens da sala
+        // Busca os itens da sala
         final itensResponse = await supabase
             .from('salas_itens')
             .select('itens(nome)')
             .eq('sala_id', row['id']);
         final itens = itensResponse.map<String>((i) => i['itens']['nome'] as String).toList();
 
-        // Média das avaliações
+        // Calcula a média das avaliações
         final avaliacoes = await supabase
             .from('feedback_salas')
             .select('nota')
@@ -111,6 +133,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  /// Carrega as salas favoritas do usuário
   Future<void> _loadFavoritas() async {
     try {
       final userId = supabase.auth.currentUser?.id;
@@ -127,6 +150,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  /// Abre o DatePicker para escolher uma data
   Future<void> _selecionarData(BuildContext context) async {
     final dataEscolhida = await showDatePicker(
       context: context,
@@ -140,6 +164,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  /// Exibe estrelas de avaliação
   Widget _buildEstrelas(double media) {
     return Row(
       children: List.generate(
@@ -153,6 +178,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Alterna entre favoritar e desfavoritar uma sala
   void _toggleFavorito(String salaId) async {
     try {
       final userId = supabase.auth.currentUser?.id;
@@ -178,12 +204,14 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Tela de carregamento
     if (_isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
+    // Filtra as salas pelo texto pesquisado
     final filteredSalas = _salas
         .where((s) => s.nome.toLowerCase().contains(searchQuery.toLowerCase()))
         .toList();
@@ -197,16 +225,26 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            TextField(
-              decoration: const InputDecoration(
-                hintText: "Pesquisar por nome",
-                prefixIcon: Icon(Icons.search),
-              ),
-              onChanged: (value) {
-                setState(() => searchQuery = value);
+            // 🔎 Campo de pesquisa -> abre a tela de busca
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SearchPage()),
+                );
               },
+              child: AbsorbPointer(
+                child: TextField(
+                  decoration: const InputDecoration(
+                    hintText: "Pesquisar por nome",
+                    prefixIcon: Icon(Icons.search),
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 16),
+
+            // 📅 Botão para escolher data
             Row(
               children: [
                 ElevatedButton.icon(
@@ -220,6 +258,8 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             const SizedBox(height: 16),
+
+            // Lista de salas
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -235,6 +275,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Card que exibe as informações da sala
   Widget _buildSalaCard(Sala sala) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -242,6 +283,7 @@ class _HomePageState extends State<HomePage> {
       elevation: 3,
       child: InkWell(
         onTap: () {
+          // Abre a tela de reserva ao clicar na sala
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -263,6 +305,7 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Imagem da sala + botão de favorito
             Stack(
               children: [
                 ClipRRect(
@@ -296,6 +339,8 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
+
+            // Informações da sala
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
