@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../reserva/card/detalhes_sala.dart'; // Importando página de detalhes da sala
 
 final supabase = Supabase.instance.client;
 
@@ -16,15 +17,15 @@ class _SearchPageState extends State<SearchPage> {
   List<dynamic> _salas = [];
   bool _isLoading = false;
 
+  /// Pesquisa salas pelo nome
   Future<void> _pesquisarSalas(String termo) async {
     termo = termo.trim();
-
     setState(() => _isLoading = true);
 
     try {
       final response = await supabase
           .from('salas')
-          .select('id, nome, capacidade')
+          .select('id, nome, capacidade, localizacao, url')
           .ilike('nome', '%$termo%')
           .order('nome', ascending: true);
 
@@ -44,7 +45,7 @@ class _SearchPageState extends State<SearchPage> {
   @override
   void initState() {
     super.initState();
-    _pesquisarSalas('');
+    _pesquisarSalas(''); // Carrega todas as salas inicialmente
   }
 
   @override
@@ -70,14 +71,11 @@ class _SearchPageState extends State<SearchPage> {
               child: TextField(
                 controller: _controller,
                 onChanged: _pesquisarSalas,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: "Pesquisar salas...",
                   border: InputBorder.none,
-                  prefixIcon: const Icon(Icons.search),
-                  contentPadding: const EdgeInsets.symmetric(
-                    vertical: 15,
-                    horizontal: 20,
-                  ),
+                  prefixIcon: Icon(Icons.search),
+                  contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
                 ),
               ),
             ),
@@ -96,10 +94,26 @@ class _SearchPageState extends State<SearchPage> {
                 return ListTile(
                   leading: const Icon(Icons.meeting_room),
                   title: Text(sala['nome'] ?? 'Sem nome'),
-                  subtitle:
-                  Text("${sala['capacidade'] ?? 0} pessoas"),
+                  subtitle: Text("${sala['capacidade'] ?? 0} pessoas"),
                   onTap: () {
-                    // TODO: abrir detalhes da sala
+                    // Ao clicar, abre DetalhesSalaPage
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DetalhesSalaPage(
+                          sala: {
+                            'id': sala['id'],
+                            'nome': sala['nome'],
+                            'capacidade': sala['capacidade'],
+                            'localizacao': sala['localizacao'],
+                            'url': sala['url'],
+                            'descricao': 'Descrição da sala...', // Pode ajustar se tiver campo
+                            'ocupada': false, // Ajuste conforme sua lógica
+                          },
+                          dataSelecionada: DateTime.now(), // Data padrão
+                        ),
+                      ),
+                    );
                   },
                 );
               },
