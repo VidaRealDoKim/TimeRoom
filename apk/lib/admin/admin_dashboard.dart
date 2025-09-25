@@ -20,10 +20,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    const AdminHomePage(),     // Aba 0 - Início
-    const AdminSalasPage(),    // Aba 1 - Salas
-    const AdminUsuariosPage(), // Aba 2 - Usuários
-    const Center(child: Text("Itens")), // Aba 3 - Itens
+    const AdminHomePage(),     // índice 0 - Home
+    const AdminSalasPage(),    // índice 1 - Salas
+    const AdminUsuariosPage(), // índice 2 - Usuários (Perfil)
+    const Center(child: Text("Itens")), // índice 3 - Itens
   ];
 
   @override
@@ -63,6 +63,27 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   void _openCriarSala() {
     Navigator.push(
         context, MaterialPageRoute(builder: (_) => const CriarSalaPage()));
+  }
+
+  Widget _buildNavItem({required IconData icon, required int index}) {
+    final bool isSelected = _selectedIndex == index;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _onItemTapped(index),
+        borderRadius: BorderRadius.circular(30),
+        splashColor: Colors.white24,
+        hoverColor: Colors.white12,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Icon(
+            icon,
+            color: isSelected ? const Color(0xFF00796B) : Colors.white,
+            size: 28,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -176,59 +197,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              // Home
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => _onItemTapped(0),
-                  borderRadius: BorderRadius.circular(30),
-                  splashColor: Colors.white24,
-                  child: const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Icon(Icons.home, color: Colors.white),
-                  ),
-                ),
-              ),
-              // Salas
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => _onItemTapped(1),
-                  borderRadius: BorderRadius.circular(30),
-                  splashColor: Colors.white24,
-                  child: const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Icon(Icons.meeting_room, color: Colors.white),
-                  ),
-                ),
-              ),
+              _buildNavItem(icon: Icons.home, index: 0),
+              _buildNavItem(icon: Icons.meeting_room, index: 1),
               const SizedBox(width: 48), // espaço para FAB
-              // Itens
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => _onItemTapped(3),
-                  borderRadius: BorderRadius.circular(30),
-                  splashColor: Colors.white24,
-                  child: const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Icon(Icons.inventory_2, color: Colors.white),
-                  ),
-                ),
-              ),
-              // Perfil
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => _onItemTapped(2),
-                  borderRadius: BorderRadius.circular(30),
-                  splashColor: Colors.white24,
-                  child: const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Icon(Icons.person, color: Colors.white),
-                  ),
-                ),
-              ),
+              _buildNavItem(icon: Icons.inventory_2, index: 3),
+              _buildNavItem(icon: Icons.person, index: 2), // Perfil por último
             ],
           ),
         ),
