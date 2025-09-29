@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../reserva/card/detalhes_sala.dart';
+import '../reserva/pages/detalhes_sala.dart';
 import '../home/pesquisa/pesquisar.dart'; // Importando a tela de pesquisa
 
 final supabase = Supabase.instance.client;
