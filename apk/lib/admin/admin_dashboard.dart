@@ -4,6 +4,7 @@ import 'salas/admin_salas.dart';
 import 'criar/criar.dart';
 import 'usuarios/admin_usuarios.dart';
 import 'home/admin_home.dart';
+import 'aprovar/admin_aprovar.dart'; // Import da página de aprovar salas
 
 final supabase = Supabase.instance.client;
 
@@ -19,11 +20,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   bool loading = true;
   int _selectedIndex = 0;
 
+  // ===================== PÁGINAS =====================
   final List<Widget> _pages = [
-    const AdminHomePage(),     // índice 0 - Home
-    const AdminSalasPage(),    // índice 1 - Salas
-    const AdminUsuariosPage(), // índice 2 - Usuários (Perfil)
-    const Center(child: Text("Itens")), // índice 3 - Itens
+    const AdminHomePage(),          // índice 0 - Home
+    const AdminSalasPage(),         // índice 1 - Salas
+    const AdminUsuariosPage(),      // índice 2 - Usuários
+    const AdminAprovarSalasPage(),  // índice 3 - Aprovar Salas
   ];
 
   @override
@@ -32,6 +34,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     fetchProfile();
   }
 
+  /// Busca o perfil do usuário logado
   Future<void> fetchProfile() async {
     final user = supabase.auth.currentUser;
     if (user == null) return;
@@ -50,21 +53,27 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     }
   }
 
+  /// Logout do usuário
   Future<void> _logout(BuildContext context) async {
     await supabase.auth.signOut();
     if (!context.mounted) return;
     Navigator.pushReplacementNamed(context, '/login');
   }
 
+  /// Seleciona a página pelo índice
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
   }
 
+  /// Abre a tela de criar sala
   void _openCriarSala() {
     Navigator.push(
-        context, MaterialPageRoute(builder: (_) => const CriarSalaPage()));
+      context,
+      MaterialPageRoute(builder: (_) => const CriarSalaPage()),
+    );
   }
 
+  /// Constrói item de navegação inferior
   Widget _buildNavItem({required IconData icon, required int index}) {
     final bool isSelected = _selectedIndex == index;
     return Material(
@@ -84,6 +93,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         ),
       ),
     );
+  }
+
+  /// Abre a página de aprovação de salas
+  void _openAprovacaoSalas() {
+    setState(() {
+      _selectedIndex = 3;
+    });
   }
 
   @override
@@ -165,11 +181,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.inventory_2),
-              title: const Text("Itens"),
+              leading: const Icon(Icons.check_circle),
+              title: const Text("Aprovar Salas"),
               onTap: () {
                 Navigator.pop(context);
-                _onItemTapped(3);
+                _openAprovacaoSalas();
               },
             ),
             const Divider(),
@@ -200,8 +216,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               _buildNavItem(icon: Icons.home, index: 0),
               _buildNavItem(icon: Icons.meeting_room, index: 1),
               const SizedBox(width: 48), // espaço para FAB
-              _buildNavItem(icon: Icons.inventory_2, index: 3),
-              _buildNavItem(icon: Icons.person, index: 2), // Perfil por último
+              _buildNavItem(icon: Icons.check_circle, index: 3),
+              _buildNavItem(icon: Icons.person, index: 2),
             ],
           ),
         ),
