@@ -94,7 +94,7 @@ class _SalasFavoritasPageState extends State<SalasFavoritasPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      //backgroundColor: Colors.white,
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : Padding(

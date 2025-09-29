@@ -189,10 +189,10 @@ class _HomePageState extends State<HomePage> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      //backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         title: Text("Olá${userName != null ? ', $userName' : ''}!"),
-        backgroundColor: const Color(0xFF2CC0AF),
+        //backgroundColor: const Color(0xFF2CC0AF),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -203,7 +203,7 @@ class _HomePageState extends State<HomePage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF2CC0AF),
+                //color: const Color(0xFF2CC0AF),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
@@ -214,12 +214,12 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       const Text(
                         "Salas disponíveis",
-                        style: TextStyle(color: Colors.white70),
+                        //style: TextStyle(color: Colors.white70),
                       ),
                       Text(
                         "${_salas.length}",
                         style: const TextStyle(
-                          color: Colors.white,
+                          //color: Colors.white,
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
                         ),
@@ -256,7 +256,7 @@ class _HomePageState extends State<HomePage> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 height: 50,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                 // color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -268,7 +268,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 child: Row(
                   children: const [
-                    Icon(Icons.search, color: Colors.grey),
+                   Icon(Icons.search, color: Colors.grey),
                     SizedBox(width: 8),
                     Text(
                       "Pesquisar por nome",
@@ -343,7 +343,7 @@ class _HomePageState extends State<HomePage> {
                       fit: BoxFit.cover,
                     )
                         : Container(
-                      color: Colors.grey[300],
+                      //color: Colors.grey[300],
                       child: const Center(
                           child: Icon(Icons.meeting_room, size: 50)),
                     ),

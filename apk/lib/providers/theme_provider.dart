@@ -2,126 +2,109 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // -----------------------------------------------------------------------------
-// Classe que define os temas (Claro e Escuro) para o aplicativo.
+// Gestor de Temas (ThemeProvider)
 // -----------------------------------------------------------------------------
-class MyThemes {
-  // Cor primária do aplicativo, usada em botões, appbars, etc.
-  static const primaryColor = Color(0xFF1ABC9C);
-
-  // Definição do TEMA CLARO
-  static final lightTheme = ThemeData(
-    // Esquema de cores principal para o tema claro.
-    colorScheme: const ColorScheme.light(
-      primary: primaryColor,
-      secondary: Colors.tealAccent,
-    ),
-    // Define a cor de fundo padrão para os Scaffolds.
-    scaffoldBackgroundColor: Colors.white,
-    // Estilo padrão para as AppBars.
-    appBarTheme: const AppBarTheme(
-      backgroundColor: primaryColor,
-      foregroundColor: Colors.white, // Cor do título e ícones
-    ),
-    // Estilo padrão para botões elevados.
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
-      ),
-    ),
-  );
-
-  // Definição do TEMA ESCURO
-  static final darkTheme = ThemeData(
-    // Esquema de cores principal para o tema escuro.
-    colorScheme: const ColorScheme.dark(
-      primary: primaryColor,
-      secondary: Colors.tealAccent,
-    ),
-    scaffoldBackgroundColor: Colors.grey[900],
-    appBarTheme: AppBarTheme(
-      backgroundColor: Colors.grey[850],
-      foregroundColor: Colors.white,
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
-      ),
-    ),
-  );
-}
-
-// -----------------------------------------------------------------------------
-// A "Central de Controle" do Tema.
-// Usa ChangeNotifier para "avisar" o aplicativo quando o tema muda.
+/// Controla o tema da aplicação (Claro, Escuro, Sistema) e guarda a
+/// preferência do utilizador no dispositivo.
 // -----------------------------------------------------------------------------
 class ThemeProvider extends ChangeNotifier {
-  // Chave usada para salvar a preferência do usuário no dispositivo.
-  static const _themePrefKey = 'theme_mode';
-
-  // Variável que guarda o modo de tema atual.
   ThemeMode _themeMode = ThemeMode.system;
 
-  // Getter público para que outras partes do app possam ler o tema atual.
   ThemeMode get themeMode => _themeMode;
-
-  // Construtor: carrega a preferência de tema salva assim que o app inicia.
-  ThemeProvider() {
-    _loadThemePreference();
+  String get themeModeString {
+    switch (_themeMode) {
+      case ThemeMode.light:
+        return 'Claro';
+      case ThemeMode.dark:
+        return 'Escuro';
+      default:
+        return 'Sistema';
+    }
   }
 
-  // Carrega a preferência de tema do armazenamento local.
-  Future<void> _loadThemePreference() async {
-    final prefs = await SharedPreferences.getInstance();
-    final themeString = prefs.getString(_themePrefKey) ?? 'System';
+  ThemeProvider() {
+    _loadTheme();
+  }
 
-    if (themeString == 'Light') {
-      _themeMode = ThemeMode.light;
-    } else if (themeString == 'Dark') {
-      _themeMode = ThemeMode.dark;
-    } else {
-      _themeMode = ThemeMode.system;
-    }
-    // Avisa os "ouvintes" (o app) que o estado foi carregado.
+  /// Carrega a preferência de tema guardada.
+  void _loadTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    final themeString = prefs.getString('theme_mode') ?? 'Sistema';
+    _themeMode = _stringToThemeMode(themeString);
     notifyListeners();
   }
 
-  // Salva a preferência de tema no armazenamento local.
-  Future<void> _saveThemePreference(String themeString) async {
+  /// Guarda a preferência de tema.
+  Future<void> _saveTheme(String themeString) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_themePrefKey, themeString);
+    prefs.setString('theme_mode', themeString);
   }
 
-  // Função chamada pela tela de Configurações para alterar o tema.
-  void setTheme(String theme) {
-    ThemeMode newThemeMode;
-    String themeString;
+  /// Atualiza o tema da aplicação.
+  void setTheme(String themeString) {
+    _themeMode = _stringToThemeMode(themeString);
+    _saveTheme(themeString);
+    notifyListeners();
+  }
 
-    if (theme == 'Claro') {
-      newThemeMode = ThemeMode.light;
-      themeString = 'Light';
-    } else if (theme == 'Escuro') {
-      newThemeMode = ThemeMode.dark;
-      themeString = 'Dark';
-    } else {
-      newThemeMode = ThemeMode.system;
-      themeString = 'System';
-    }
-
-    // Se o tema realmente mudou, atualiza o estado e avisa o app
-    if (newThemeMode != _themeMode) {
-      _themeMode = newThemeMode;
-      _saveThemePreference(themeString);
-      // A "mágica" acontece aqui: notifica toda a árvore de widgets para se redesenhar
-      notifyListeners();
+  ThemeMode _stringToThemeMode(String themeString) {
+    switch (themeString) {
+      case 'Claro':
+        return ThemeMode.light;
+      case 'Escuro':
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.system;
     }
   }
 
-  // Converte o ThemeMode atual para uma String legível para a UI.
-  String get themeModeString {
-    if (_themeMode == ThemeMode.light) return 'Claro';
-    if (_themeMode == ThemeMode.dark) return 'Escuro';
-    return 'Sistema';
-  }
+  // --- DEFINIÇÕES DE TEMA CENTRALIZADAS ---
+
+  // Tema Claro
+  static final ThemeData lightTheme = ThemeData(
+    brightness: Brightness.light,
+    primarySwatch: Colors.teal,
+    scaffoldBackgroundColor: Colors.grey[100],
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF1ABC9C),
+      foregroundColor: Colors.white,
+    ),
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: Color(0xFF1ABC9C),
+      selectedItemColor: Colors.white,
+      unselectedItemColor: Colors.white70,
+    ),
+    cardColor: Colors.white,
+    // Define um colorScheme para consistência
+    colorScheme: const ColorScheme.light(
+      primary: Color(0xFF1ABC9C),
+      secondary: Color(0xFF16A085),
+      background: Color(0xFFF5F5F5),
+      surface: Colors.white,
+    ),
+  );
+
+  // Tema Escuro
+  static final ThemeData darkTheme = ThemeData(
+    brightness: Brightness.dark,
+    primarySwatch: Colors.teal,
+    scaffoldBackgroundColor: const Color(0xFF121212),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF222222),
+      foregroundColor: Colors.white,
+    ),
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: Color(0xFF222222),
+      selectedItemColor: Color(0xFF1ABC9C),
+      unselectedItemColor: Colors.grey,
+    ),
+    cardColor: const Color(0xFF1E1E1E),
+    // Define um colorScheme escuro
+    colorScheme: const ColorScheme.dark(
+      primary: Color(0xFF1ABC9C),
+      secondary: Color(0xFF16A085),
+      background: Color(0xFF121212),
+      surface: Color(0xFF1E1E1E),
+    ),
+  );
 }
