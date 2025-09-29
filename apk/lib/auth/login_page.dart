@@ -163,93 +163,128 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+// lib/auth/login_page.dart -> build method
+
+  // In lib/auth/login_page.dart
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.grey[200],
-      body: Center(
+        backgroundColor: theme.colorScheme.background,
+        body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Container(
-              padding: const EdgeInsets.all(24.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12.0),
-                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3),)],
-              ),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Image.asset('assets/logo.png', height: 100),
-                    const SizedBox(height: 32.0),
-                    const Text('E-mail', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8.0),
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(hintText: 'Insira seu e-mail', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12.0),),
-                      validator: (v) => v == null || v.isEmpty ? 'Por favor, insira seu e-mail.' : null,
-                    ),
-                    const SizedBox(height: 16.0),
-                    const Text('Senha', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8.0),
-                    // --- UPDATED: The password TextFormField ---
-                    TextFormField(
-                      controller: _passwordController,
-                      // The obscureText property now uses our state variable
-                      obscureText: _isPasswordObscured,
-                      decoration: InputDecoration(
-                        hintText: 'Insira sua senha',
-                        border: const OutlineInputBorder(),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12.0),
-                        // The suffixIcon now contains our new visibility toggle button
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _isPasswordObscured ? Icons.visibility_off : Icons.visibility,
-                          ),
-                          onPressed: () {
-                            // Toggles the state when the icon is pressed
-                            setState(() {
-                              _isPasswordObscured = !_isPasswordObscured;
-                            });
-                          },
-                        ),
-                      ),
-                      validator: (v) => v == null || v.isEmpty ? 'Por favor, insira sua senha.' : null,
-                    ),
-                    const SizedBox(height: 24.0),
-                    ElevatedButton(
-                      onPressed: _loading ? null : _login,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0),),
-                      ),
-                      child: _loading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('Entrar', style: TextStyle(fontSize: 16)),
-                    ),
-                    const SizedBox(height: 24.0),
-                    TextButton(
-                      onPressed: () => Navigator.pushNamed(context, '/forgot'),
-                      child: Text('Esqueci minha senha', style: TextStyle(color: Colors.grey[600])),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pushNamed(context, '/register'),
-                      child: Text('Criar conta', style: TextStyle(color: Colors.grey[600])),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+        padding: const EdgeInsets.all(24.0),
+    child: ConstrainedBox(
+    constraints: const BoxConstraints(maxWidth: 400),
+    child: Container(
+    padding: const EdgeInsets.all(24.0),
+    decoration: BoxDecoration(
+    color: theme.cardColor,
+    borderRadius: BorderRadius.circular(12.0),
+    boxShadow: isDarkMode ? null : const [
+    BoxShadow(
+    color: Colors.black12,
+    blurRadius: 6,
+    offset: Offset(0, 3),
+    ),
+    ],
+    ),
+    child: Form(
+    key: _formKey,
+    child: Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+    Image.asset('assets/logo.png', height: 100),
+    const SizedBox(height: 32.0),
+
+    const Text('E-mail', style: TextStyle(fontWeight: FontWeight.bold)),
+    const SizedBox(height: 8.0),
+    // --- FIXED: Re-added decoration for the "box" style ---
+    TextFormField(
+    controller: _emailController,
+    keyboardType: TextInputType.emailAddress,
+    decoration: const InputDecoration(
+    hintText: 'Insira seu e-mail',
+    border: OutlineInputBorder(), // This creates the box
+    contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
+    ),
+    validator: (v) =>
+    v == null || v.isEmpty ? 'Por favor, insira seu e-mail.' : null,
+    ),
+
+    const SizedBox(height: 16.0),
+
+    const Text('Senha', style: TextStyle(fontWeight: FontWeight.bold)),
+    const SizedBox(height: 8.0),
+    // --- FIXED: Re-added decoration for the "box" style ---
+    TextFormField(
+    controller: _passwordController,
+      obscureText: _isPasswordObscured,
+    decoration: InputDecoration(
+    hintText: 'Insira sua senha',
+    border: const OutlineInputBorder(), // This creates the box
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12.0),
+      suffixIcon: IconButton(
+        icon: Icon(
+          _isPasswordObscured ? Icons.visibility_off : Icons.visibility,
         ),
-      ),
+        onPressed: () {
+          // Toggles the state when the icon is pressed
+          setState(() {
+            _isPasswordObscured = !_isPasswordObscured;
+          });
+        },
+      ),    ),
+    validator: (v) => v == null || v.isEmpty ? 'Por favor, insira sua senha.' : null,
+    ),
+
+    const SizedBox(height: 24.0),
+
+    ElevatedButton(
+    onPressed: _loading ? null : _login,
+    style: ElevatedButton.styleFrom(
+    backgroundColor: const Color(0xFF1ABC9C), // Using your brand color
+    foregroundColor: Colors.white,
+    padding: const EdgeInsets.symmetric(vertical: 16.0),
+    shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(8.0),
+    ),
+    ),
+    child: _loading
+    ? const CircularProgressIndicator(color: Colors.white)
+        : const Text('Entrar', style: TextStyle(fontSize: 16)),
+    ),
+
+    const SizedBox(height: 24.0),
+
+    // --- FIXED: Re-added subtle color for the text buttons ---
+    TextButton(
+    onPressed: () => Navigator.pushNamed(context, '/forgot'),
+    child: Text(
+    'Esqueci minha senha',
+    // This color is subtle and works in both light and dark themes
+    style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6)),
+    ),
+    ),
+
+    TextButton(
+    onPressed: () => Navigator.pushNamed(context, '/register'),
+    child: Text(
+    'Criar conta',
+    // This color is subtle and works in both light and dark themes
+    style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6)),
+    ),
+    ),
+    ],
+    ),
+    ),
+    ),
+    ),
+    ),
+    )
     );
-  }
+    }
 }

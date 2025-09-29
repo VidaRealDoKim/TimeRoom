@@ -76,27 +76,36 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.grey[200],
-      body: Center(
+        backgroundColor: theme.colorScheme.background,
+        body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32.0),
-          child: Container(
-            padding: const EdgeInsets.all(24.0),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12.0),
-            ),
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [Image.asset(
-                'assets/logo.png',
-                height: 100,),
-                // Usando o widget de logo para consistência.
-                  const SizedBox(height: 40),
+        padding: const EdgeInsets.all(24.0),
+    child: ConstrainedBox(
+    constraints: const BoxConstraints(maxWidth: 400),
+    child: Container(
+    padding: const EdgeInsets.all(24.0),
+    decoration: BoxDecoration(
+    color: theme.cardColor,
+    borderRadius: BorderRadius.circular(12.0),
+    boxShadow: isDarkMode ? null : const [
+    BoxShadow(
+    color: Colors.black12,
+    blurRadius: 6,
+    offset: Offset(0, 3),
+    ),
+    ],
+    ),
+    child: Form(
+    key: _formKey,
+    child: Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+    Image.asset('assets/logo.png', height: 100),
+    const SizedBox(height: 40),
 
 
                   // --- Campo Nome ---
@@ -227,6 +236,7 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
       ),
+    )
     );
   }
 }

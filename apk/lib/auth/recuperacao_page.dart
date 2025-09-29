@@ -55,8 +55,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.grey[200],
+      backgroundColor: theme.colorScheme.background,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -65,9 +68,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             child: Container(
               padding: const EdgeInsets.all(24.0),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: theme.cardColor,
                 borderRadius: BorderRadius.circular(12.0),
-                boxShadow: const [
+                boxShadow: isDarkMode ? null : const [
                   BoxShadow(
                     color: Colors.black12,
                     blurRadius: 6,
@@ -80,10 +83,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Image.asset(
-                      'assets/logo.png',
-                      height: 100,
-                    ),
+                    Image.asset('assets/logo.png', height: 100),
                     const SizedBox(height: 32.0),
                     const Text('Informe seu e-mail',
                         style: TextStyle(fontWeight: FontWeight.bold)),
