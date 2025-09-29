@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 // -----------------------------------------------------------------------------
 // Tela de Perfil do Usuário (Com edição e logout com confirmação)
+// ** VERSÃO ATUALIZADA SEM A OPÇÃO DE NOTIFICAÇÕES **
 // -----------------------------------------------------------------------------
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
@@ -15,7 +16,7 @@ class _PerfilPageState extends State<PerfilPage> {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   // Estado do Widget
-  bool _notificacoesAtivadas = true;
+  // REMOÇÃO: A variável _notificacoesAtivadas foi removida pois não é mais necessária.
   bool _loading = true;
   bool _editMode = false; // Ativa o modo de edição
   String? _avatarUrl;
@@ -191,13 +192,11 @@ class _PerfilPageState extends State<PerfilPage> {
         _buildMenuOption(
           icon: Icons.settings_outlined,
           text: 'Configurações',
-          // ATUALIZAÇÃO: Navega para a nova tela de configurações.
           onTap: () {
-            // Garante que a rota '/config' existe no seu main.dart!
             Navigator.pushNamed(context, '/config');
           },
         ),
-        _buildNotificationOption(),
+        // REMOÇÃO: A chamada para construir o botão de notificação foi removida daqui.
         _buildMenuOption(
           icon: Icons.logout,
           text: 'Log Out',
@@ -291,22 +290,9 @@ class _PerfilPageState extends State<PerfilPage> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Item de notificação
-  // ---------------------------------------------------------------------------
-  Widget _buildNotificationOption() {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading:
-      const Icon(Icons.notifications_outlined, color: Colors.black54),
-      title: const Text('Notificações', style: TextStyle(fontSize: 16)),
-      trailing: Switch(
-        value: _notificacoesAtivadas,
-        onChanged: (bool value) {
-          setState(() => _notificacoesAtivadas = value);
-        },
-        activeColor: const Color(0xFF1ABC9C),
-      ),
-    );
-  }
+// ---------------------------------------------------------------------------
+// REMOÇÃO: O método inteiro para construir o item de notificação foi removido.
+// ---------------------------------------------------------------------------
+// Widget _buildNotificationOption() { ... }
 }
+
