@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'editar_sala.dart';
-import 'admin_salas_itens.dart'; // Tela de itens da sala
+import 'admin_salas_itens.dart';
 
 final supabase = Supabase.instance.client;
 
@@ -17,7 +17,6 @@ class _AdminSalasPageState extends State<AdminSalasPage> with SingleTickerProvid
   List<Map<String, dynamic>> salas = [];
   bool _loading = false;
   late TabController _tabController;
-  Map<String, dynamic>? salaSelecionada;
 
   // ===================== CORES PADRONIZADAS =====================
   final Color primaryColor = const Color(0xFF1ABC9C);
@@ -27,7 +26,7 @@ class _AdminSalasPageState extends State<AdminSalasPage> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 1, vsync: this); // Apenas uma aba agora
     fetchSalas();
   }
 
@@ -46,18 +45,67 @@ class _AdminSalasPageState extends State<AdminSalasPage> with SingleTickerProvid
     }
   }
 
-  // ===================== DELETE SALA =====================
-  Future<void> deleteSala(int salaId) async {
+  // ===================== CONFIRMAÇÃO DE EXCLUSÃO =====================
+  Future<void> confirmDeleteSala(Map<String, dynamic> sala) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirmar exclusão"),
+        content: Text(
+          "Deseja realmente excluir a sala '${sala['nome']}'? "
+              "Todos os itens, reservas, feedbacks e favoritos relacionados serão removidos.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            child: const Text("Excluir"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await deleteSala(sala['id'] as String);
+    }
+  }
+
+  // ===================== DELETE SALA EM CASCATA =====================
+  Future<void> deleteSala(String salaId) async {
+    setState(() => _loading = true);
     try {
+      await supabase.from('feedback_salas').delete().eq('sala_id', salaId);
+      await supabase.from('reservas').delete().eq('sala_id', salaId);
+      await supabase.from('salas_favoritas').delete().eq('sala_id', salaId);
+      await supabase.from('salas_horarios').delete().eq('sala_id', salaId);
+      await supabase.from('salas_itens').delete().eq('sala_id', salaId);
       await supabase.from('salas').delete().eq('id', salaId);
-      fetchSalas();
+
+      await fetchSalas();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Sala excluída com sucesso.")),
+        );
+      }
     } catch (e) {
       debugPrint("Erro ao deletar sala: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erro ao deletar sala: $e")),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   // ===================== CARD DE SALA =====================
   Widget buildSalaCard(Map<String, dynamic> sala) {
+    final url = (sala['url'] as String?) ?? '';
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 4,
@@ -74,14 +122,15 @@ class _AdminSalasPageState extends State<AdminSalasPage> with SingleTickerProvid
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 color: primaryColor.withOpacity(0.2),
-                image: sala['url'] != null && sala['url'].isNotEmpty
+                image: url.isNotEmpty
                     ? DecorationImage(
-                  image: NetworkImage(sala['url']),
+                  image: NetworkImage(url),
                   fit: BoxFit.cover,
+                  onError: (_, __) {},
                 )
                     : null,
               ),
-              child: sala['url'] == null || sala['url'].isEmpty
+              child: url.isEmpty
                   ? const Center(
                 child: Icon(Icons.meeting_room, size: 60, color: Color(0xFF1ABC9C)),
               )
@@ -101,7 +150,6 @@ class _AdminSalasPageState extends State<AdminSalasPage> with SingleTickerProvid
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                // Editar sala
                 IconButton(
                   icon: Icon(Icons.edit, color: primaryColor, size: 28),
                   onPressed: () async {
@@ -114,21 +162,11 @@ class _AdminSalasPageState extends State<AdminSalasPage> with SingleTickerProvid
                     if (updated == true) fetchSalas();
                   },
                 ),
-                // Deletar sala
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.redAccent, size: 28),
-                  onPressed: () => deleteSala(sala['id']),
+                  onPressed: () => confirmDeleteSala(sala),
                 ),
-                // Itens da sala
-                IconButton(
-                  icon: Icon(Icons.inventory_2, color: secondaryColor, size: 28),
-                  onPressed: () {
-                    setState(() {
-                      salaSelecionada = sala;
-                      _tabController.index = 1;
-                    });
-                  },
-                ),
+                // Ícone de itens removido do card
               ],
             ),
           ],
@@ -159,37 +197,7 @@ class _AdminSalasPageState extends State<AdminSalasPage> with SingleTickerProvid
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
-      body: Column(
-        children: [
-          // Tabs para alternar entre salas e itens
-          TabBar(
-            controller: _tabController,
-            indicatorColor: secondaryColor,
-            labelColor: secondaryColor,
-            unselectedLabelColor: Colors.black54,
-            tabs: const [
-              Tab(icon: Icon(Icons.list), text: 'Salas'),
-              Tab(icon: Icon(Icons.inventory_2), text: 'Itens'),
-            ],
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                buildListaSalas(),
-                salaSelecionada != null
-                    ? AdminSalaItensPage(sala: salaSelecionada!)
-                    : const Center(
-                  child: Text(
-                    "Selecione uma sala na aba de Salas",
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      body: buildListaSalas(),
     );
   }
 }

@@ -9,13 +9,16 @@ final Color secondaryColor = const Color(0xFF1ABC9C);
 final Color bgColor = const Color(0xFFF5F5F5);
 
 class CriarSalaPage extends StatefulWidget {
-  const CriarSalaPage({super.key});
+  final VoidCallback? onSalaCriada; // callback para atualizar aba do dashboard
+
+  const CriarSalaPage({super.key, this.onSalaCriada});
 
   @override
   State<CriarSalaPage> createState() => _CriarSalaPageState();
 }
 
-class _CriarSalaPageState extends State<CriarSalaPage> with SingleTickerProviderStateMixin {
+class _CriarSalaPageState extends State<CriarSalaPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   // ===================== CONTROLLERS DE SALA =====================
@@ -23,12 +26,14 @@ class _CriarSalaPageState extends State<CriarSalaPage> with SingleTickerProvider
   final TextEditingController _capacidadeController = TextEditingController();
   final TextEditingController _localizacaoController = TextEditingController();
   final TextEditingController _urlController = TextEditingController();
-  final TextEditingController _statusController = TextEditingController(text: "disponível");
+  final TextEditingController _statusController =
+  TextEditingController(text: "disponível");
 
   // ===================== CONTROLLERS DE OBJETO =====================
   final TextEditingController _nomeItemController = TextEditingController();
   final TextEditingController _urlItemController = TextEditingController();
-  final TextEditingController _descricaoItemController = TextEditingController();
+  final TextEditingController _descricaoItemController =
+  TextEditingController();
 
   List<Map<String, dynamic>> todosItens = [];
   List<Map<String, dynamic>> itensSala = [];
@@ -82,9 +87,9 @@ class _CriarSalaPageState extends State<CriarSalaPage> with SingleTickerProvider
       final salaId = response['id'];
 
       for (var item in itensSala) {
-        final quantidade = int.tryParse(
-            quantidadeControllers[item['item_id']]?.text ?? '1') ??
-            1;
+        final quantidade =
+            int.tryParse(quantidadeControllers[item['item_id']]?.text ?? '1') ??
+                1;
         await supabase.from('salas_itens').insert({
           'sala_id': salaId,
           'item_id': item['item_id'],
@@ -93,10 +98,26 @@ class _CriarSalaPageState extends State<CriarSalaPage> with SingleTickerProvider
       }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Sala criada com sucesso!")),
+
+      // DIALOG DE SUCESSO
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text("Sucesso!"),
+          content: const Text("Sala criada com sucesso!"),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // fecha o diálogo
+                widget.onSalaCriada?.call(); // atualiza aba do dashboard
+                Navigator.of(context).pop(); // volta para dashboard
+              },
+              child: const Text("OK"),
+            ),
+          ],
+        ),
       );
-      Navigator.pop(context, true);
     } catch (e) {
       debugPrint("Erro ao criar sala: $e");
       if (!mounted) return;
@@ -149,8 +170,20 @@ class _CriarSalaPageState extends State<CriarSalaPage> with SingleTickerProvider
         _descricaoItemController.clear();
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Objeto criado com sucesso!")),
+      // DIALOG DE SUCESSO PARA OBJETO
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text("Sucesso!"),
+          content: const Text("Objeto criado com sucesso!"),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("OK"),
+            ),
+          ],
+        ),
       );
     } catch (e) {
       debugPrint("Erro ao criar objeto: $e");
@@ -189,12 +222,15 @@ class _CriarSalaPageState extends State<CriarSalaPage> with SingleTickerProvider
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       buildImagePreview(_urlController),
-                      buildTextField(_urlController, "URL da Imagem da Sala", Icons.image),
-                      buildTextField(_nomeController, "Nome da Sala", Icons.meeting_room),
                       buildTextField(
-                          _capacidadeController, "Capacidade", Icons.people,
+                          _urlController, "URL da Imagem da Sala", Icons.image),
+                      buildTextField(
+                          _nomeController, "Nome da Sala", Icons.meeting_room),
+                      buildTextField(_capacidadeController, "Capacidade",
+                          Icons.people,
                           keyboardType: TextInputType.number),
-                      buildTextField(_localizacaoController, "Localização", Icons.place),
+                      buildTextField(
+                          _localizacaoController, "Localização", Icons.place),
                       buildTextField(_statusController, "Status", Icons.info),
                       ...itensSala.map(buildItemCard),
                       buildActionButton(
@@ -211,9 +247,12 @@ class _CriarSalaPageState extends State<CriarSalaPage> with SingleTickerProvider
                   child: Column(
                     children: [
                       buildImagePreview(_urlItemController),
-                      buildTextField(_urlItemController, "URL da Imagem", Icons.image),
-                      buildTextField(_nomeItemController, "Nome do Objeto", Icons.inventory_2),
-                      buildTextField(_descricaoItemController, "Descrição", Icons.description),
+                      buildTextField(
+                          _urlItemController, "URL da Imagem", Icons.image),
+                      buildTextField(
+                          _nomeItemController, "Nome do Objeto", Icons.inventory_2),
+                      buildTextField(_descricaoItemController, "Descrição",
+                          Icons.description),
                       buildActionButton(
                         text: "Criar Objeto",
                         icon: Icons.add,
@@ -230,7 +269,8 @@ class _CriarSalaPageState extends State<CriarSalaPage> with SingleTickerProvider
     );
   }
 
-  Widget buildTextField(TextEditingController controller, String label, IconData icon,
+  Widget buildTextField(
+      TextEditingController controller, String label, IconData icon,
       {TextInputType keyboardType = TextInputType.text}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -296,8 +336,10 @@ class _CriarSalaPageState extends State<CriarSalaPage> with SingleTickerProvider
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.center,
                   decoration: InputDecoration(
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+                    border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    contentPadding:
+                    const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
                   ),
                 ),
               ),
@@ -329,7 +371,8 @@ class _CriarSalaPageState extends State<CriarSalaPage> with SingleTickerProvider
           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
         )
             : Icon(icon),
-        label: Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        label: Text(text,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryColor,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

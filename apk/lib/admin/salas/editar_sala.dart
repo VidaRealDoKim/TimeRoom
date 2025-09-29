@@ -244,7 +244,7 @@ class _EditarSalaPageState extends State<EditarSalaPage> {
         // --- NEW: Add the actions property for the QR code button ---
         actions: [
           IconButton(
-            icon: const Icon(Icons.import_contacts), // QR Code Icon
+            icon: const Icon(Icons.qr_code), // QR Code Icon
             tooltip: 'Gerar QR Code da Sala', // Text that appears on long press
             onPressed: () {
               // Get the unique ID of the current room
