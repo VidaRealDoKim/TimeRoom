@@ -41,9 +41,11 @@ class _DashboardPageState extends State<DashboardPage> {
           .select()
           .eq('id', user.id)
           .maybeSingle();
-      setState(() {
-        _profile = response;
-      });
+      if (mounted) {
+        setState(() {
+          _profile = response;
+        });
+      }
     }
   }
 
@@ -65,9 +67,7 @@ class _DashboardPageState extends State<DashboardPage> {
             child: const Text("Cancelar"),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1ABC9C),
-            ),
+            // CORREÇÃO: O estilo do botão foi removido para usar a cor do tema.
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text("Sair"),
           ),
@@ -111,22 +111,13 @@ class _DashboardPageState extends State<DashboardPage> {
               return;
             }
 
-            // Buscar itens da sala
-            final itensResponse = await supabase
-                .from('salas_itens')
-                .select('itens(nome)')
-                .eq('sala_id', salaId);
+            // A lógica de buscar itens e avaliações permanece a mesma...
+            final itensResponse = await supabase.from('salas_itens').select('itens(nome)').eq('sala_id', salaId);
             final itens = itensResponse.map<String>((i) => i['itens']['nome'] as String).toList();
-
-            // Buscar média de avaliações
-            final avaliacoes = await supabase
-                .from('feedback_salas')
-                .select('nota')
-                .eq('sala_id', salaId);
+            final avaliacoes = await supabase.from('feedback_salas').select('nota').eq('sala_id', salaId);
             double media = 0;
             if (avaliacoes.isNotEmpty) {
-              media = avaliacoes.map((a) => a['nota'] as int).reduce((a, b) => a + b) /
-                  avaliacoes.length;
+              media = avaliacoes.map((a) => a['nota'] as int).reduce((a, b) => a + b) / avaliacoes.length;
             }
 
             // Navegar para DetalhesSalaPage
@@ -144,6 +135,8 @@ class _DashboardPageState extends State<DashboardPage> {
                     'descricao': itens.join(', '),
                     'media_avaliacoes': media,
                     'ocupada': false,
+                    'latitude': salaResponse['latitude'],
+                    'longitude': salaResponse['longitude'],
                   },
                   dataSelecionada: DateTime.now(),
                 ),
@@ -160,19 +153,20 @@ class _DashboardPageState extends State<DashboardPage> {
     return SafeArea(
       bottom: false,
       child: Scaffold(
+        // CORREÇÃO: A AppBar agora busca as suas cores do tema global.
         appBar: AppBar(
           elevation: 0,
-          backgroundColor: Colors.white,
           centerTitle: true,
           title: Image.asset('assets/LogoHorizontal.png', height: 30),
-          iconTheme: const IconThemeData(color: Colors.black),
+          // As cores 'backgroundColor' e 'iconTheme' foram removidas para usar o tema.
         ),
         drawer: Drawer(
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
               DrawerHeader(
-                decoration: const BoxDecoration(color: Color(0xFF1ABC9C)),
+                // CORREÇÃO: A cor agora vem do tema, para ser consistente no modo claro e escuro.
+                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -183,7 +177,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           ? NetworkImage(_profile!['avatar_url'])
                           : null,
                       child: _profile?['avatar_url'] == null
-                          ? const Icon(Icons.person, size: 40, color: Color(0xFF1ABC9C))
+                          ? Icon(Icons.person, size: 40, color: Theme.of(context).colorScheme.primary)
                           : null,
                     ),
                     const SizedBox(height: 12),
@@ -223,7 +217,7 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
               ListTile(
                 leading: const Icon(Icons.star),
-                title: const Text("Salas"),
+                title: const Text("Salas"), // Assumindo que o índice 2 é Favoritos/Salas
                 onTap: () {
                   Navigator.pop(context);
                   _onItemTapped(2);
@@ -249,36 +243,31 @@ class _DashboardPageState extends State<DashboardPage> {
         body: _pages[_selectedIndex],
         floatingActionButton: FloatingActionButton(
           onPressed: _openQRScanner,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: Container(
-            width: 70,
-            height: 70,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Color(0xFF1ABC9C),
-            ),
-            child: const Icon(Icons.qr_code_scanner, size: 32, color: Colors.white),
+          // CORREÇÃO: A cor do botão agora vem do tema.
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          child: Icon(
+            Icons.qr_code_scanner,
+            size: 32,
+            // CORREÇÃO: A cor do ícone é definida para contrastar com o fundo.
+            color: Theme.of(context).colorScheme.onPrimary,
           ),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        // CORREÇÃO: A cor da BottomAppBar agora é controlada pelo tema.
         bottomNavigationBar: BottomAppBar(
           shape: const CircularNotchedRectangle(),
           notchMargin: 6.0,
-          color: const Color(0xFF1ABC9C),
-          child: SafeArea(
-            child: SizedBox(
-              height: 60,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(Icons.home, 0),
-                  _buildNavItem(Icons.calendar_today, 1),
-                  const SizedBox(width: 40),
-                  _buildNavItem(Icons.star, 2),
-                  _buildNavItem(Icons.person, 3),
-                ],
-              ),
+          child: SizedBox(
+            height: 60,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(Icons.home, 0),
+                _buildNavItem(Icons.calendar_today, 1),
+                const SizedBox(width: 40),
+                _buildNavItem(Icons.star, 2),
+                _buildNavItem(Icons.person, 3),
+              ],
             ),
           ),
         ),
@@ -288,8 +277,13 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildNavItem(IconData icon, int index) {
     final isSelected = _selectedIndex == index;
+    // CORREÇÃO: As cores dos ícones agora vêm do tema da BottomNavigationBar.
+    final color = isSelected
+        ? Theme.of(context).bottomNavigationBarTheme.selectedItemColor
+        : Theme.of(context).bottomNavigationBarTheme.unselectedItemColor;
+
     return IconButton(
-      icon: Icon(icon, color: isSelected ? Colors.white : Colors.white70),
+      icon: Icon(icon, color: color),
       onPressed: () => _onItemTapped(index),
       iconSize: 28,
       padding: const EdgeInsets.all(0),
@@ -326,10 +320,21 @@ class _QRViewPageState extends State<QRViewPage> {
         onQRViewCreated: (QRViewController controller) {
           this.controller = controller;
           controller.scannedDataStream.listen((scanData) {
-            widget.onScan(scanData.code!);
+            if (scanData.code != null) {
+              // Garante que a função só é chamada uma vez.
+              controller.pauseCamera();
+              widget.onScan(scanData.code!);
+            }
           });
         },
       ),
     );
   }
+
+  @override
+  void dispose() {
+    controller?.dispose();
+    super.dispose();
+  }
 }
+

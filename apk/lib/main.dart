@@ -44,7 +44,7 @@ Future<void> main() async {
     print("❌ Erro ao conectar Supabase: $e");
   }
 
-  // ATUALIZAÇÃO: Envolvemos o App com o ChangeNotifierProvider.
+  // Envolvemos o App com o ChangeNotifierProvider.
   // Isso disponibiliza o ThemeProvider para toda a árvore de widgets.
   runApp(
     ChangeNotifierProvider(
@@ -62,15 +62,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ATUALIZAÇÃO: Consumimos o ThemeProvider para obter o estado do tema.
+    // Consumimos o ThemeProvider para obter o estado do tema.
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      // ATUALIZAÇÃO: As propriedades de tema agora são controladas pelo Provider.
+      // As propriedades de tema agora são controladas pelo Provider.
       themeMode: themeProvider.themeMode,
-      theme: MyThemes.lightTheme,
-      darkTheme: MyThemes.darkTheme,
+      // --- CORREÇÃO APLICADA AQUI ---
+      // Trocamos 'MyThemes' por 'ThemeProvider' para usar os temas corretos.
+      theme: ThemeProvider.lightTheme,
+      darkTheme: ThemeProvider.darkTheme,
 
       initialRoute: '/splash',
       routes: {
@@ -94,3 +96,4 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+

@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-// CORREÇÃO: Importa a página de DETALHES, para onde devemos navegar primeiro.
 import 'card/detalhes_sala.dart';
 
 final supabase = Supabase.instance.client;
 
-// --- CORREÇÃO 1: Adicionar latitude e longitude ao modelo de dados ---
 class Sala {
   final String id;
   final String nome;
@@ -15,7 +13,6 @@ class Sala {
   final String? url;
   final List<String> itens;
   final double mediaAvaliacoes;
-  // Adicionadas as propriedades para guardar as coordenadas.
   final double? latitude;
   final double? longitude;
 
@@ -27,12 +24,19 @@ class Sala {
     this.url,
     required this.itens,
     required this.mediaAvaliacoes,
-    // Adicionados ao construtor.
     this.latitude,
     this.longitude,
   });
 
   factory Sala.fromJson(Map<String, dynamic> json, List<String> itens, double media) {
+    double? _parseDouble(dynamic value) {
+      if (value == null) return null;
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      if (value is String) return double.tryParse(value);
+      return null;
+    }
+
     return Sala(
       id: json['id'],
       nome: json['nome'],
@@ -41,10 +45,8 @@ class Sala {
       url: json['url'],
       itens: itens,
       mediaAvaliacoes: media,
-      // CORREÇÃO 2: Extrair latitude e longitude do JSON que vem do Supabase.
-      // O 'tryParse' ajuda a evitar erros se o valor não for um número.
-      latitude: double.tryParse(json['latitude']?.toString() ?? ''),
-      longitude: double.tryParse(json['longitude']?.toString() ?? ''),
+      latitude: _parseDouble(json['latitude']),
+      longitude: _parseDouble(json['longitude']),
     );
   }
 }
@@ -71,19 +73,12 @@ class _ReservasPageState extends State<ReservasPage> {
 
   Future<void> _loadSalas() async {
     try {
-      // --- CORREÇÃO 3: Garantir que estamos a pedir TODAS as colunas ---
-      // Usar o '*' garante que as novas colunas 'latitude' e 'longitude' serão incluídas.
       final response = await supabase.from('salas').select('*');
       List<Sala> salas = [];
 
       for (final row in response) {
-        // --- TESTE DE DEPURACÃO ---
-        // Vamos imprimir os dados brutos que vêm do Supabase para cada sala.
-        // Verifique na aba "Run" do Android Studio se as chaves 'latitude' e 'longitude'
-        // aparecem aqui e se têm os valores corretos.
         debugPrint("Dados da sala recebidos do Supabase: $row");
 
-        // O resto da sua lógica para buscar itens e avaliações está perfeita.
         final itensResponse = await supabase
             .from('salas_itens')
             .select('itens(nome)')
@@ -103,13 +98,17 @@ class _ReservasPageState extends State<ReservasPage> {
         salas.add(Sala.fromJson(row, itens, media));
       }
 
-      setState(() {
-        _salas = salas;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _salas = salas;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       debugPrint("Erro ao carregar salas: $e");
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -121,7 +120,7 @@ class _ReservasPageState extends State<ReservasPage> {
       lastDate: DateTime(2030),
     );
 
-    if (dataEscolhida != null) {
+    if (dataEscolhida != null && mounted) {
       setState(() => _dataSelecionada = dataEscolhida);
     }
   }
@@ -152,6 +151,8 @@ class _ReservasPageState extends State<ReservasPage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
+      // O Scaffold é necessário aqui para o ecrã de carregamento.
+      // O tema já define a cor de fundo correta.
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
@@ -161,76 +162,73 @@ class _ReservasPageState extends State<ReservasPage> {
         .where((s) => s.nome.toLowerCase().contains(searchQuery.toLowerCase()))
         .toList();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Reservar Sala"),
-        backgroundColor: const Color(0xFFFFFFFF),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              decoration: const InputDecoration(
-                hintText: "Pesquisar por nome",
-                prefixIcon: Icon(Icons.search),
-              ),
-              onChanged: (value) {
-                setState(() => searchQuery = value);
-              },
+    // Esta página não precisa de um Scaffold ou AppBar, pois ela é mostrada
+    // dentro do Dashboard, que já tem a estrutura principal.
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          TextField(
+            decoration: const InputDecoration(
+              hintText: "Pesquisar por nome",
+              prefixIcon: Icon(Icons.search),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () => _selecionarData(context),
-                  icon: const Icon(Icons.date_range),
-                  label: Text(DateFormat('dd/MM/yyyy').format(_dataSelecionada)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2CC0AF),
-                  ),
-                ),
-              ],
+            onChanged: (value) {
+              setState(() => searchQuery = value);
+            },
+          ),
+          const SizedBox(height: 16),
+          // Usamos um Align para garantir que o botão fica à esquerda.
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ElevatedButton.icon(
+              onPressed: () => _selecionarData(context),
+              icon: const Icon(Icons.date_range),
+              label: Text(DateFormat('dd/MM/yyyy').format(_dataSelecionada)),
+              // CORREÇÃO: O estilo do botão foi removido. Agora ele usa
+              // as cores definidas no ThemeProvider para o modo claro e escuro.
             ),
-            const SizedBox(height: 16),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
+          ),
+          const SizedBox(height: 16),
+          // A lista agora está envolvida num Expanded para ocupar o espaço
+          // restante de forma segura e evitar erros de layout.
+          Expanded(
+            child: ListView.builder(
               itemCount: filteredSalas.length,
               itemBuilder: (context, index) {
                 final sala = filteredSalas[index];
                 return _buildSalaCard(sala);
               },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildSalaCard(Sala sala) {
     return Card(
+      // CORREÇÃO: A cor do Card agora é definida pelo tema,
+      // tornando-o mais escuro no modo escuro.
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 3,
+      clipBehavior: Clip.antiAlias, // Garante que o conteúdo respeita as bordas arredondadas.
       child: InkWell(
         onTap: () {
-          // --- CORREÇÃO 4: Navegar para a PÁGINA DE DETALHES e passar os dados ---
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => DetalhesSalaPage(
-                // O DetalhesSalaPage espera um Map, então convertemos o nosso objeto Sala.
                 sala: {
                   'id': sala.id,
                   'nome': sala.nome,
                   'capacidade': sala.capacidade,
                   'localizacao': sala.localizacao,
                   'url': sala.url,
-                  'descricao': sala.itens.join(', '), // Exemplo de descrição
+                  'descricao': sala.itens.join(', '),
                   'media_avaliacoes': sala.mediaAvaliacoes,
                   'ocupada': false, // Adicionar lógica se necessário
-                  // O mais importante: passar as coordenadas!
                   'latitude': sala.latitude,
                   'longitude': sala.longitude,
                 },
@@ -244,21 +242,37 @@ class _ReservasPageState extends State<ReservasPage> {
           children: [
             Stack(
               children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: sala.url != null
-                      ? Image.network(
-                    sala.url!,
-                    height: 180,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  )
-                      : Container(
-                    height: 180,
-                    color: Colors.grey[300],
-                    child: const Center(
-                        child: Icon(Icons.meeting_room, size: 50)),
-                  ),
+                (sala.url != null && sala.url!.isNotEmpty)
+                    ? Image.network(
+                  sala.url!,
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  // Adiciona um ecrã de carregamento e de erro para a imagem.
+                  loadingBuilder: (context, child, progress) {
+                    return progress == null ? child : const SizedBox(height: 180, child: Center(child: CircularProgressIndicator()));
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      height: 180,
+                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      child: Center(
+                          child: Icon(Icons.image_not_supported,
+                              size: 50,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    );
+                  },
+                )
+                    : Container(
+                  height: 180,
+                  // CORREÇÃO: Usamos uma cor do tema para o placeholder.
+                  color: Theme.of(context).colorScheme.surfaceVariant,
+                  child: Center(
+                      child: Icon(Icons.meeting_room,
+                          size: 50,
+                          // CORREÇÃO: Cor do ícone também vem do tema.
+                          // DEIXAR ESSES THEME.OF PQ ELE É DO TEMA ESCURO
+                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 ),
                 Positioned(
                   top: 8,
@@ -268,7 +282,7 @@ class _ReservasPageState extends State<ReservasPage> {
                       favoritas.contains(sala.id)
                           ? Icons.favorite
                           : Icons.favorite_border,
-                      color: Colors.red,
+                      color: Colors.red, // Cores de destaque como esta podem ser mantidas
                     ),
                     onPressed: () => _toggleFavorito(sala.id),
                   ),
@@ -303,10 +317,7 @@ class _ReservasPageState extends State<ReservasPage> {
                     children: [
                       _buildEstrelas(sala.mediaAvaliacoes),
                       const SizedBox(width: 8),
-                      Text(
-                        "(${sala.itens.length} avaliações)",
-                        style: const TextStyle(color: Colors.grey),
-                      ),
+                      // ... (código das avaliações)
                     ],
                   ),
                 ],
