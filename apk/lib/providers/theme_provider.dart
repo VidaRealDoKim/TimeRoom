@@ -11,6 +11,7 @@ class ThemeProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
 
   ThemeMode get themeMode => _themeMode;
+
   String get themeModeString {
     switch (_themeMode) {
       case ThemeMode.light:
@@ -60,51 +61,73 @@ class ThemeProvider extends ChangeNotifier {
 
   // --- DEFINIÇÕES DE TEMA CENTRALIZADAS ---
 
+  // ======================
   // Tema Claro
+  // ======================
   static final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
     primarySwatch: Colors.teal,
     scaffoldBackgroundColor: Colors.grey[100],
+
     appBarTheme: const AppBarTheme(
       backgroundColor: Color(0xFF1ABC9C),
       foregroundColor: Colors.white,
+      elevation: 0,
     ),
+
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: Color(0xFF1ABC9C),
       selectedItemColor: Colors.white,
       unselectedItemColor: Colors.white70,
     ),
+
+    bottomAppBarTheme: const BottomAppBarThemeData(
+      color: Color(0xFF1ABC9C),
+      surfaceTintColor: Colors.transparent,
+      elevation: 6,
+    ),
+
     cardColor: Colors.white,
-    // Define um colorScheme para consistência
+
     colorScheme: const ColorScheme.light(
       primary: Color(0xFF1ABC9C),
       secondary: Color(0xFF16A085),
-      background: Color(0xFFF5F5F5),
-      surface: Colors.white,
+      surface: Color(0xFFF5F5F5), // substitui background
     ),
   );
 
+  // ======================
   // Tema Escuro
+  // ======================
   static final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
     primarySwatch: Colors.teal,
     scaffoldBackgroundColor: const Color(0xFF121212),
+
     appBarTheme: const AppBarTheme(
       backgroundColor: Color(0xFF222222),
       foregroundColor: Colors.white,
+      elevation: 0,
     ),
+
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: Color(0xFF222222),
       selectedItemColor: Color(0xFF1ABC9C),
       unselectedItemColor: Colors.grey,
     ),
+
+    bottomAppBarTheme: const BottomAppBarThemeData(
+      color: Color(0xFF222222),
+      surfaceTintColor: Colors.transparent,
+      elevation: 6,
+    ),
+
     cardColor: const Color(0xFF1E1E1E),
-    // Define um colorScheme escuro
+
     colorScheme: const ColorScheme.dark(
       primary: Color(0xFF1ABC9C),
       secondary: Color(0xFF16A085),
-      background: Color(0xFF121212),
-      surface: Color(0xFF1E1E1E),
+      surface: Color(0xFF121212), // substitui background
     ),
   );
 }

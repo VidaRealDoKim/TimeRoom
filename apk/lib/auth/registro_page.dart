@@ -1,4 +1,4 @@
-// lib/auth/register.dart
+// lib/auth/registro_page.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -37,26 +37,22 @@ class _RegisterPageState extends State<RegisterPage> {
     final name = _nameController.text.trim();
 
     try {
-      final response = await Supabase.instance.client.auth.signUp(
+      await Supabase.instance.client.auth.signUp(
         email: email,
         password: password,
-        // Adicionando o nome do usuário aos metadados.
-        // Isso é útil para exibir o nome dele no app depois.
         data: {'full_name': name},
       );
 
-      //Verifica se o widget ainda está montado.
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Cadastro realizado! Verifique seu e-mail para confirmação.'),
+          content: Text(
+              'Cadastro realizado! Verifique seu e-mail para confirmação.'),
           backgroundColor: Colors.green,
         ),
       );
-      // Volta para a tela de login após o sucesso.
       Navigator.pop(context);
-
     } on AuthException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -65,26 +61,28 @@ class _RegisterPageState extends State<RegisterPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ocorreu um erro inesperado.'), backgroundColor: Colors.red),
+        const SnackBar(
+            content: Text('Ocorreu um erro inesperado.'),
+            backgroundColor: Colors.red),
       );
     } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+
     return Scaffold(
-      backgroundColor: Colors.grey[200],
+      backgroundColor: brightness == Brightness.dark ? Colors.black : Colors.grey[200],
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(32.0),
           child: Container(
             padding: const EdgeInsets.all(24.0),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: brightness == Brightness.dark ? Colors.grey[900] : Colors.white,
               borderRadius: BorderRadius.circular(12.0),
             ),
             constraints: const BoxConstraints(maxWidth: 400),
@@ -92,21 +90,26 @@ class _RegisterPageState extends State<RegisterPage> {
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [Image.asset(
-                'assets/logo.png',
-                height: 100,),
-                // Usando o widget de logo para consistência.
+                children: [
+                  // Logo dinâmica conforme tema
+                  Image.asset(
+                    brightness == Brightness.dark
+                        ? 'assets/logo.png'
+                        : 'assets/logo1.png',
+                    height: 100,
+                  ),
                   const SizedBox(height: 40),
-
 
                   // --- Campo Nome ---
                   const Text('Nome completo', style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8.0),
                   TextFormField(
                     controller: _nameController,
-                    decoration: const InputDecoration(hintText: 'Insira seu nome',border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12.0)),
-                      validator: (value) {
+                    decoration: const InputDecoration(
+                        hintText: 'Insira seu nome',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12.0)),
+                    validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Por favor, insira seu nome.';
                       }
@@ -121,8 +124,10 @@ class _RegisterPageState extends State<RegisterPage> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(hintText: 'Insira seu e-mail',border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12.0)),
+                    decoration: const InputDecoration(
+                        hintText: 'Insira seu e-mail',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12.0)),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Por favor, insira seu e-mail.';
@@ -142,9 +147,10 @@ class _RegisterPageState extends State<RegisterPage> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: true,
-                    decoration: const InputDecoration(hintText: 'Insira sua senha',border: OutlineInputBorder(),
+                    decoration: const InputDecoration(
+                        hintText: 'Insira sua senha',
+                        border: OutlineInputBorder(),
                         contentPadding: EdgeInsets.symmetric(horizontal: 12.0)),
-                    //Validador de senha complexa.
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Por favor, insira uma senha.';
@@ -172,7 +178,9 @@ class _RegisterPageState extends State<RegisterPage> {
                   TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: true,
-                    decoration: const InputDecoration(hintText: 'Repita sua senha',border: OutlineInputBorder(),
+                    decoration: const InputDecoration(
+                        hintText: 'Repita sua senha',
+                        border: OutlineInputBorder(),
                         contentPadding: EdgeInsets.symmetric(horizontal: 12.0)),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -190,7 +198,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ElevatedButton(
                     onPressed: _loading ? null : _register,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal[400], //Cor consistente
+                      backgroundColor: Colors.teal[400],
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16.0),
                       shape: RoundedRectangleBorder(
@@ -216,8 +224,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     child: Text(
                       'Já possuo uma conta',
                       style: TextStyle(
-                        color: Colors.grey[600],
-                         //Estilo consistente
+                        color: brightness == Brightness.dark ? Colors.grey[400] : Colors.grey[600],
                       ),
                     ),
                   ),
