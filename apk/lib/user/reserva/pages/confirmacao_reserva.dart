@@ -1,40 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-/// -----------------------------------------------------------------------------
-/// Tela de Confirmação de Reserva com detalhes completos da sala
-/// -----------------------------------------------------------------------------
 class ConfirmacaoReservaPage extends StatelessWidget {
-  /// Dados da reserva e da sala:
-  /// {
-  ///   'nome_sala': 'Sala A',
-  ///   'url': 'imagem da sala',
-  ///   'capacidade': 10,
-  ///   'localizacao': 'Andar 1',
-  ///   'descricao': 'Sala equipada com projetor...',
-  ///   'mediaAvaliacoes': 4.2,
-  ///   'comentarios': [
-  ///     {'usuario': 'João', 'comentario': 'Ótima sala!'},
-  ///     {'usuario': 'Maria', 'comentario': 'Muito confortável'}
-  ///   ],
-  ///   'data_reserva': DateTime,
-  ///   'hora_inicio': '14:00',
-  ///   'hora_fim': '16:00'
-  /// }
   final Map<String, dynamic> reserva;
 
-  const ConfirmacaoReservaPage({super.key, required this.reserva});
+  /// Horários disponíveis da sala
+  final List<Map<String, TimeOfDay>> horariosDisponiveis;
 
-  Widget _buildEstrelas(double media) {
-    List<Widget> stars = [];
-    for (int i = 1; i <= 5; i++) {
-      stars.add(Icon(
-        i <= media ? Icons.star : Icons.star_border,
-        color: Colors.amber,
-        size: 18,
-      ));
-    }
-    return Row(children: stars);
+  /// Horários já reservados da sala
+  final List<Map<String, TimeOfDay>> horariosOcupados;
+
+  const ConfirmacaoReservaPage({
+    super.key,
+    required this.reserva,
+    required this.horariosDisponiveis,
+    required this.horariosOcupados,
+  });
+
+  Widget _buildHorarioItem(BuildContext context, TimeOfDay inicio, TimeOfDay fim, bool ocupado, bool atual) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: atual
+            ? Colors.blue
+            : ocupado
+            ? Colors.red[200]
+            : Colors.green[200],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        '${inicio.format(context)} - ${fim.format(context)}',
+        style: TextStyle(
+          color: Colors.black,
+          fontWeight: atual ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+    );
+  }
+
+  bool _isReservaNoHorario(TimeOfDay inicio, TimeOfDay fim, TimeOfDay reservaInicio, TimeOfDay reservaFim) {
+    final inicioMin = inicio.hour * 60 + inicio.minute;
+    final fimMin = fim.hour * 60 + fim.minute;
+    final resInicioMin = reservaInicio.hour * 60 + reservaInicio.minute;
+    final resFimMin = reservaFim.hour * 60 + reservaFim.minute;
+    return resInicioMin < fimMin && resFimMin > inicioMin; // overlap
   }
 
   @override
@@ -47,8 +57,14 @@ class ConfirmacaoReservaPage extends StatelessWidget {
     final double mediaAvaliacoes = reserva['mediaAvaliacoes'] ?? 0;
     final List comentarios = reserva['comentarios'] ?? [];
     final DateTime dataReserva = reserva['data_reserva'] ?? DateTime.now();
-    final String horaInicio = reserva['hora_inicio'] ?? '';
-    final String horaFim = reserva['hora_fim'] ?? '';
+    final TimeOfDay horaInicio = TimeOfDay(
+      hour: int.parse(reserva['hora_inicio'].split(":")[0]),
+      minute: int.parse(reserva['hora_inicio'].split(":")[1]),
+    );
+    final TimeOfDay horaFim = TimeOfDay(
+      hour: int.parse(reserva['hora_fim'].split(":")[0]),
+      minute: int.parse(reserva['hora_fim'].split(":")[1]),
+    );
 
     final String dataFormatada = DateFormat('dd/MM/yyyy').format(dataReserva);
 
@@ -87,15 +103,23 @@ class ConfirmacaoReservaPage extends StatelessWidget {
                 height: 180,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    Container(height: 180, color: Colors.grey[300]),
+                errorBuilder: (_, __, ___) => Container(height: 180, color: Colors.grey[300]),
               )
                   : Container(height: 180, color: Colors.grey[300]),
             ),
             const SizedBox(height: 16),
             Text(nomeSala, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            _buildEstrelas(mediaAvaliacoes),
+            Row(
+              children: List.generate(
+                5,
+                    (i) => Icon(
+                  i < mediaAvaliacoes ? Icons.star : Icons.star_border,
+                  color: Colors.amber,
+                  size: 18,
+                ),
+              ),
+            ),
             const SizedBox(height: 8),
             Text("Capacidade: $capacidade • Local: $localizacao"),
             const SizedBox(height: 8),
@@ -111,7 +135,18 @@ class ConfirmacaoReservaPage extends StatelessWidget {
                   children: [
                     const Text('Horário da Reserva', style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
-                    Text('$horaInicio - $horaFim • $dataFormatada'),
+                    Text('${reserva['hora_inicio']} - ${reserva['hora_fim']} • $dataFormatada'),
+                    const SizedBox(height: 12),
+                    const Text('Horários da Sala', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Column(
+                      children: horariosDisponiveis.map((h) {
+                        bool ocupado = horariosOcupados.any((o) =>
+                            _isReservaNoHorario(h['inicio']!, h['fim']!, o['inicio']!, o['fim']!));
+                        bool atual = _isReservaNoHorario(h['inicio']!, h['fim']!, horaInicio, horaFim);
+                        return _buildHorarioItem(context, h['inicio']!, h['fim']!, ocupado, atual);
+                      }).toList(),
+                    )
                   ],
                 ),
               ),

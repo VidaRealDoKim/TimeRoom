@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../reserva/card/detalhes_sala.dart'; // Importando página de detalhes da sala
+import '../../reserva/pages/detalhes_sala.dart'; // Importando página de detalhes da sala
 
 final supabase = Supabase.instance.client;
 

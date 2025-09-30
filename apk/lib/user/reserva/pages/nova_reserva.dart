@@ -23,11 +23,14 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
   bool loading = false;
   final TextEditingController _observacoesController = TextEditingController();
   List<Map<String, dynamic>> comentarios = [];
+  List<Map<String, TimeOfDay>> horariosDisponiveis = [];
+  List<Map<String, TimeOfDay>> horariosOcupados = [];
 
   @override
   void initState() {
     super.initState();
     _loadComentarios();
+    _loadHorarios();
   }
 
   Future<void> _loadComentarios() async {
@@ -40,6 +43,44 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
 
     setState(() {
       comentarios = List<Map<String, dynamic>>.from(response);
+    });
+  }
+
+  Future<void> _loadHorarios() async {
+    final salaId = widget.sala['id'];
+    final dataStr = DateFormat('yyyy-MM-dd').format(widget.dataSelecionada);
+
+    // Horários disponíveis da sala
+    final disponiveis = await supabase
+        .from('salas_horarios')
+        .select('hora_inicio, hora_fim')
+        .eq('sala_id', salaId);
+
+    // Horários já ocupados
+    final ocupados = await supabase
+        .from('reservas')
+        .select('hora_inicio, hora_fim')
+        .eq('sala_id', salaId)
+        .eq('data_reserva', dataStr);
+
+    setState(() {
+      horariosDisponiveis = List<Map<String, TimeOfDay>>.from(disponiveis.map((h) => {
+        'inicio': TimeOfDay(
+            hour: int.parse(h['hora_inicio'].split(':')[0]),
+            minute: int.parse(h['hora_inicio'].split(':')[1])),
+        'fim': TimeOfDay(
+            hour: int.parse(h['hora_fim'].split(':')[0]),
+            minute: int.parse(h['hora_fim'].split(':')[1])),
+      }));
+
+      horariosOcupados = List<Map<String, TimeOfDay>>.from(ocupados.map((h) => {
+        'inicio': TimeOfDay(
+            hour: int.parse(h['hora_inicio'].split(':')[0]),
+            minute: int.parse(h['hora_inicio'].split(':')[1])),
+        'fim': TimeOfDay(
+            hour: int.parse(h['hora_fim'].split(':')[0]),
+            minute: int.parse(h['hora_fim'].split(':')[1])),
+      }));
     });
   }
 
@@ -57,6 +98,12 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
   }
 
   Future<void> _salvarReserva() async {
+    if (horariosDisponiveis.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Horários ainda não carregados')));
+      return;
+    }
+
     setState(() => loading = true);
 
     try {
@@ -64,18 +111,23 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
       if (userId == null) throw "Usuário não autenticado";
 
       final horaInicio = TimeOfDay.now();
-      final horaFim = TimeOfDay(hour: horaInicio.hour + 2, minute: horaInicio.minute);
+      final horaFim =
+      TimeOfDay(hour: horaInicio.hour + 2, minute: horaInicio.minute);
 
+      // Inserir reserva
       await supabase.from('reservas').insert({
         'user_id': userId,
         'sala_id': widget.sala['id'],
-        'data_reserva': widget.dataSelecionada.toIso8601String().split('T')[0],
+        'data_reserva':
+        DateFormat('yyyy-MM-dd').format(widget.dataSelecionada),
         'hora_inicio':
         '${horaInicio.hour.toString().padLeft(2, '0')}:${horaInicio.minute.toString().padLeft(2, '0')}',
         'hora_fim':
         '${horaFim.hour.toString().padLeft(2, '0')}:${horaFim.minute.toString().padLeft(2, '0')}',
         'status': 'pendente',
-        'titulo': _observacoesController.text.isEmpty ? 'Reserva' : _observacoesController.text,
+        'titulo': _observacoesController.text.isEmpty
+            ? 'Reserva'
+            : _observacoesController.text,
       });
 
       if (!mounted) return;
@@ -92,16 +144,21 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
               'mediaAvaliacoes': widget.sala['media_avaliacoes'] ?? 0,
               'comentarios': comentarios,
               'data_reserva': widget.dataSelecionada,
-              'hora_inicio': '${horaInicio.hour.toString().padLeft(2,'0')}:${horaInicio.minute.toString().padLeft(2,'0')}',
-              'hora_fim': '${horaFim.hour.toString().padLeft(2,'0')}:${horaFim.minute.toString().padLeft(2,'0')}',
+              'hora_inicio':
+              '${horaInicio.hour.toString().padLeft(2, '0')}:${horaInicio.minute.toString().padLeft(2, '0')}',
+              'hora_fim':
+              '${horaFim.hour.toString().padLeft(2, '0')}:${horaFim.minute.toString().padLeft(2, '0')}',
               'observacoes': _observacoesController.text,
             },
+            horariosDisponiveis: horariosDisponiveis,
+            horariosOcupados: horariosOcupados,
           ),
         ),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Erro: $e')));
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -140,7 +197,8 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
             ),
             const SizedBox(height: 16),
             Text(sala['nome'] ?? '',
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                style:
+                const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             _buildEstrelas(sala['media_avaliacoes'] ?? 0),
             const SizedBox(height: 8),
@@ -156,7 +214,8 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
               maxLines: 3,
               decoration: InputDecoration(
                 hintText: 'Observações (opcional)',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
             const SizedBox(height: 16),
@@ -182,7 +241,8 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: List.generate(
                       c['nota'] ?? 0,
-                          (_) => const Icon(Icons.star, color: Colors.amber, size: 16),
+                          (_) =>
+                      const Icon(Icons.star, color: Colors.amber, size: 16),
                     ),
                   ),
                 );
@@ -201,7 +261,8 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: const Text('Confirmar Reserva',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    style:
+                    TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(height: 16),
