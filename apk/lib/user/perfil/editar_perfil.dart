@@ -36,7 +36,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
     _fetchUserProfile();
   }
 
-  /// Busca os dados do usuário e inicializa os campos
+  /// Busca os dados do usuário no Supabase e inicializa os campos
   Future<void> _fetchUserProfile() async {
     setState(() => _loading = true);
 
@@ -68,12 +68,15 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao carregar perfil: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Erro ao carregar perfil: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
 
-  /// Faz upload de avatar e deleta o anterior se existir
+  /// Faz upload de avatar para Supabase Storage e deleta o anterior, se existir
   Future<void> _uploadAvatar(ImageSource source) async {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) return;
@@ -88,11 +91,11 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
       final fileName = '${userId}_$timestamp${path.extension(file.path)}';
       final storage = _supabase.storage.from('avatars');
 
-      // Deleta avatar antigo, se existir
+      // --- Deleta avatar antigo, se existir ---
       if (_avatarUrl != null && _avatarUrl!.isNotEmpty) {
         try {
           final uri = Uri.parse(_avatarUrl!);
-          final oldFileName = uri.pathSegments.last;
+          final oldFileName = uri.pathSegments.last.split('?').first; // Remove query string
           await storage.remove([oldFileName]);
         } catch (e) {
           print('Não foi possível deletar avatar antigo: $e');
@@ -122,28 +125,36 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
       setState(() => _avatarUrl = publicUrl);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Foto de perfil atualizada!'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Foto de perfil atualizada!'),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao fazer upload: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Erro ao fazer upload: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
 
-  /// Remove o avatar atual
+  /// Remove o avatar atual do Storage e atualiza o banco de dados
   Future<void> _removerAvatar() async {
     final userId = _supabase.auth.currentUser?.id;
-    if (userId == null || _avatarUrl == null) return;
+    if (userId == null || _avatarUrl == null || _avatarUrl!.isEmpty) return;
 
     try {
       final storage = _supabase.storage.from('avatars');
       final uri = Uri.parse(_avatarUrl!);
-      final fileName = uri.pathSegments.last;
+      final fileName = uri.pathSegments.last.split('?').first;
 
+      // Remove do storage
       await storage.remove([fileName]);
 
+      // Atualiza banco de dados
       await _supabase
           .from('profiles')
           .update({'avatar_url': '', 'updated_at': DateTime.now().toIso8601String()})
@@ -153,12 +164,18 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
       setState(() => _avatarUrl = null);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Foto removida com sucesso!'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Foto removida com sucesso!'),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao remover foto: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Erro ao remover foto: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -184,7 +201,10 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
       setState(() => _loading = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Perfil atualizado com sucesso!'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Perfil atualizado com sucesso!'),
+          backgroundColor: Colors.green,
+        ),
       );
 
       Navigator.pop(context, true);
@@ -192,7 +212,10 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao atualizar perfil: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Erro ao atualizar perfil: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -208,12 +231,18 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
       _senhaController.clear();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Senha alterada com sucesso!'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Senha alterada com sucesso!'),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao alterar senha: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Erro ao alterar senha: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -251,7 +280,10 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao excluir conta: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Erro ao excluir conta: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -285,13 +317,14 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Avatar
+              // Avatar com opções de upload e remover
               Center(
                 child: Stack(
                   children: [
                     CircleAvatar(
                       radius: 50,
-                      backgroundImage: _avatarUrl != null ? NetworkImage(_avatarUrl!) : null,
+                      backgroundImage:
+                      _avatarUrl != null ? NetworkImage(_avatarUrl!) : null,
                       child: _avatarUrl == null
                           ? Icon(Icons.person, size: 50, color: colors.onSurface)
                           : null,
@@ -315,15 +348,20 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                           }
                         },
                         itemBuilder: (ctx) => [
-                          const PopupMenuItem(value: 'gallery', child: Text("Galeria")),
-                          const PopupMenuItem(value: 'camera', child: Text("Câmera")),
+                          const PopupMenuItem(
+                              value: 'gallery', child: Text("Galeria")),
+                          const PopupMenuItem(
+                              value: 'camera', child: Text("Câmera")),
                           if (_avatarUrl != null)
-                            const PopupMenuItem(value: 'remove', child: Text("Remover Foto")),
+                            const PopupMenuItem(
+                                value: 'remove', child: Text("Remover Foto")),
                         ],
                         child: CircleAvatar(
-                          backgroundColor: colors.primary.withAlpha((0.8 * 255).toInt()),
+                          backgroundColor:
+                          colors.primary.withAlpha((0.8 * 255).toInt()),
                           radius: 20,
-                          child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                          child: const Icon(Icons.camera_alt,
+                              color: Colors.white, size: 20),
                         ),
                       ),
                     ),
@@ -332,10 +370,11 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
               ),
               const SizedBox(height: 20),
 
-              // Card de informações
+              // Card de informações do perfil
               Card(
                 elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 color: colors.surface,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -388,13 +427,13 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 24),
 
-              // Card de senha
+              // Card de alteração de senha
               Card(
                 elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 color: colors.surface,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
