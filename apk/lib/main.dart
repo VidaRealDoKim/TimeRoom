@@ -1,3 +1,10 @@
+// -----------------------------------------------------------------------------
+// main.dart
+// Arquivo principal de inicialização do app.
+// Configura o Supabase, carrega variáveis de ambiente, e gerencia o tema global
+// usando Provider (ThemeProvider).
+// -----------------------------------------------------------------------------
+
 import 'package:apk/providers/theme_provider.dart';
 import 'package:apk/user/favorito/favoritos.dart';
 import 'package:apk/user/perfil/config.dart';
@@ -6,46 +13,47 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'user/perfil/termos_page.dart';
-import 'user/perfil/politica_privacidade_page.dart';
 
-// -----------------------------------------------------------------------------
-// Importações internas (telas principais do projeto)
-// -----------------------------------------------------------------------------
+// Telas principais
 import 'user/dashboard.dart';
 import 'admin/admin_dashboard.dart';
 import 'user/splash_screen.dart';
 
-// Auth
+// Telas de autenticação
 import 'auth/login_page.dart';
 import 'auth/registro_page.dart';
 import 'auth/recuperacao_page.dart';
 
+// Telas adicionais de perfil
+import 'user/perfil/termos_page.dart';
+import 'user/perfil/politica_privacidade_page.dart';
+
 // -----------------------------------------------------------------------------
-// Função principal do aplicativo
+// Função principal
 // -----------------------------------------------------------------------------
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Carregando variáveis de ambiente (.env)
   try {
     await dotenv.load(fileName: ".env");
-    print("✅ .env carregado com sucesso!");
+    debugPrint("✅ .env carregado com sucesso!");
   } catch (e) {
-    print("❌ Erro ao carregar .env: $e");
+    debugPrint("❌ Erro ao carregar .env: $e");
   }
 
+  // Inicializando Supabase
   try {
     await Supabase.initialize(
       url: dotenv.env['SUPABASE_URL']!,
       anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
     );
-    print("✅ Supabase conectado com sucesso!");
+    debugPrint("✅ Supabase conectado com sucesso!");
   } catch (e) {
-    print("❌ Erro ao conectar Supabase: $e");
+    debugPrint("❌ Erro ao conectar Supabase: $e");
   }
 
-  // Envolvemos o App com o ChangeNotifierProvider.
-  // Isso disponibiliza o ThemeProvider para toda a árvore de widgets.
+  // Rodando app com Provider para controlar o tema global
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
@@ -62,26 +70,30 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Consumimos o ThemeProvider para obter o estado do tema.
+    // Consumindo o estado do ThemeProvider
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      // As propriedades de tema agora são controladas pelo Provider.
+
+      // Controla qual tema usar: claro, escuro ou automático
       themeMode: themeProvider.themeMode,
-      // --- CORREÇÃO APLICADA AQUI ---
-      // Trocamos 'MyThemes' por 'ThemeProvider' para usar os temas corretos.
+
+      // Temas definidos no ThemeProvider
       theme: ThemeProvider.lightTheme,
       darkTheme: ThemeProvider.darkTheme,
 
+      // Definindo rota inicial
       initialRoute: '/splash',
+
+      // Rotas nomeadas principais
       routes: {
-        // Telas Auth
+        // Autenticação
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/forgot': (context) => const ForgotPasswordPage(),
 
-        // Telas principais do usuário
+        // Usuário
         '/splash': (context) => const SplashScreen(),
         '/dashboard': (context) => const DashboardPage(),
         '/perfil': (context) => const PerfilPage(),
@@ -90,10 +102,9 @@ class MyApp extends StatelessWidget {
         '/termos': (context) => const TermosPage(),
         '/politica': (context) => const PoliticaPrivacidadePage(),
 
-        // Telas Admin
+        // Admin
         '/admindashboard': (context) => const AdminDashboardPage(),
       },
     );
   }
 }
-
