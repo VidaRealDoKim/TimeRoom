@@ -1,8 +1,9 @@
+// lib/home/home.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../reserva/pages/detalhes_sala.dart';
-import '../home/pesquisa/pesquisar.dart'; // Importando a tela de pesquisa
+import '../home/pesquisa/pesquisar.dart';
 
 final supabase = Supabase.instance.client;
 
@@ -26,7 +27,6 @@ class Sala {
     required this.mediaAvaliacoes,
   });
 
-  /// Construtor a partir de JSON (dados do Supabase)
   factory Sala.fromJson(Map<String, dynamic> json, List<String> itens, double media) {
     return Sala(
       id: json['id'],
@@ -63,7 +63,6 @@ class _HomePageState extends State<HomePage> {
     _loadFavoritas();
   }
 
-  /// Carrega o nome do usuário logado
   Future<void> _loadUserName() async {
     try {
       final userId = supabase.auth.currentUser?.id;
@@ -82,7 +81,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  /// Carrega a lista de salas
   Future<void> _loadSalas() async {
     try {
       final response = await supabase.from('salas').select();
@@ -118,7 +116,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  /// Carrega salas favoritas
   Future<void> _loadFavoritas() async {
     try {
       final userId = supabase.auth.currentUser?.id;
@@ -135,7 +132,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  /// Abre DatePicker
   Future<void> _selecionarData(BuildContext context) async {
     final dataEscolhida = await showDatePicker(
       context: context,
@@ -146,7 +142,6 @@ class _HomePageState extends State<HomePage> {
     if (dataEscolhida != null) setState(() => _dataSelecionada = dataEscolhida);
   }
 
-  /// Exibe estrelas de avaliação
   Widget _buildEstrelas(double media) {
     return Row(
       children: List.generate(
@@ -160,7 +155,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// Alterna favorito
   void _toggleFavorito(String salaId) async {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) return;
@@ -182,6 +176,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+
     if (_isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -189,11 +185,18 @@ class _HomePageState extends State<HomePage> {
     }
 
     return Scaffold(
-      //backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: brightness == Brightness.dark ? Colors.black : Colors.grey[200],
       appBar: AppBar(
-        title: Text("Olá${userName != null ? ', $userName' : ''}!"),
-        //backgroundColor: const Color(0xFF2CC0AF),
+        title: Row(
+          children: [
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text("Olá${userName != null ? ', $userName' : ''}!"),
+            ),
+          ],
+        ),
         elevation: 0,
+        backgroundColor: brightness == Brightness.dark ? Colors.grey[900] : Colors.teal,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -203,7 +206,7 @@ class _HomePageState extends State<HomePage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                //color: const Color(0xFF2CC0AF),
+                color: brightness == Brightness.dark ? Colors.grey[850] : Colors.teal[400],
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
@@ -212,14 +215,15 @@ class _HomePageState extends State<HomePage> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         "Salas disponíveis",
-                        //style: TextStyle(color: Colors.white70),
+                        style: TextStyle(
+                            color: brightness == Brightness.dark ? Colors.white70 : Colors.white),
                       ),
                       Text(
                         "${_salas.length}",
-                        style: const TextStyle(
-                          //color: Colors.white,
+                        style: TextStyle(
+                          color: brightness == Brightness.dark ? Colors.white : Colors.white,
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
                         ),
@@ -244,7 +248,7 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 16),
 
-            // Campo de pesquisa que leva para SearchPage
+            // Campo de pesquisa
             GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -256,19 +260,15 @@ class _HomePageState extends State<HomePage> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 height: 50,
                 decoration: BoxDecoration(
-                 // color: Colors.white,
+                  color: brightness == Brightness.dark ? Colors.grey[850] : Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
                   ],
                 ),
                 child: Row(
                   children: const [
-                   Icon(Icons.search, color: Colors.grey),
+                    Icon(Icons.search, color: Colors.grey),
                     SizedBox(width: 8),
                     Text(
                       "Pesquisar por nome",
@@ -293,7 +293,7 @@ class _HomePageState extends State<HomePage> {
               ),
               itemBuilder: (context, index) {
                 final sala = _salas[index];
-                return _buildSalaCard(sala);
+                return _buildSalaCard(sala, brightness);
               },
             ),
           ],
@@ -302,11 +302,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// Card da sala
-  Widget _buildSalaCard(Sala sala) {
+  Widget _buildSalaCard(Sala sala, Brightness brightness) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 3,
+      color: brightness == Brightness.dark ? Colors.grey[850] : Colors.white,
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -343,7 +343,7 @@ class _HomePageState extends State<HomePage> {
                       fit: BoxFit.cover,
                     )
                         : Container(
-                      //color: Colors.grey[300],
+                      color: brightness == Brightness.dark ? Colors.grey[700] : Colors.grey[300],
                       child: const Center(
                           child: Icon(Icons.meeting_room, size: 50)),
                     ),
@@ -371,15 +371,19 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Text(
                     sala.nome,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: brightness == Brightness.dark ? Colors.white : Colors.black),
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                      Icon(Icons.location_on, size: 14, color: Colors.grey[400]),
                       const SizedBox(width: 4),
-                      Text(sala.localizacao ?? '-', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                      Text(sala.localizacao ?? '-',
+                          style: TextStyle(
+                              color: Colors.grey[400], fontSize: 12)),
                     ],
                   ),
                   const SizedBox(height: 4),

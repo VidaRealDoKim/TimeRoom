@@ -1,4 +1,4 @@
-// lib/auth/forgot_password.dart
+// lib/auth/recuperacao_page.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -27,36 +27,39 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     final email = _emailController.text.trim();
 
     try {
-      final response = await Supabase.instance.client.auth.resetPasswordForEmail(
+      await Supabase.instance.client.auth.resetPasswordForEmail(
         email,
         redirectTo: 'io.supabase.flutter://reset-password', // ajuste se tiver URL de redirecionamento
       );
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Verifique seu e-mail para redefinir a senha.',
-          ),
+          content: Text('Verifique seu e-mail para redefinir a senha.'),
         ),
       );
       Navigator.pop(context); // volta para login
     } on AuthException catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message)),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Erro inesperado. Tente novamente.')),
       );
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+
     return Scaffold(
-      backgroundColor: Colors.grey[200],
+      backgroundColor: brightness == Brightness.dark ? Colors.black : Colors.grey[200],
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -65,14 +68,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             child: Container(
               padding: const EdgeInsets.all(24.0),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: brightness == Brightness.dark ? Colors.grey[900] : Colors.white,
                 borderRadius: BorderRadius.circular(12.0),
                 boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 6,
-                    offset: Offset(0, 3),
-                  ),
+                  BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
                 ],
               ),
               child: Form(
@@ -80,13 +79,18 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Logo dinâmica conforme tema
                     Image.asset(
-                      'assets/logo.png',
+                      brightness == Brightness.dark
+                          ? 'assets/logo.png'
+                          : 'assets/logo1.png',
                       height: 100,
                     ),
                     const SizedBox(height: 32.0),
-                    const Text('Informe seu e-mail',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Informe seu e-mail',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 8.0),
                     TextFormField(
                       controller: _emailController,
@@ -128,7 +132,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       },
                       child: Text(
                         'Voltar para login',
-                        style: TextStyle(color: Colors.grey[600]),
+                        style: TextStyle(color: brightness == Brightness.dark ? Colors.grey[400] : Colors.grey[600]),
                       ),
                     ),
                   ],
