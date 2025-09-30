@@ -1,7 +1,7 @@
+import 'package:apk/user/reserva/pages/detalhes_sala.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'card/detalhes_sala.dart';
 
 final supabase = Supabase.instance.client;
 
