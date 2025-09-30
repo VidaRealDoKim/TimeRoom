@@ -7,9 +7,9 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-// -----------------------------------------------------------------------------
-// Importações internas (telas principais do projeto)
-// -----------------------------------------------------------------------------
+import 'package:apk/user/perfil/notification_service.dart';
+
+// Telas principais
 import 'user/dashboard.dart';
 import 'admin/admin_dashboard.dart';
 import 'user/splash_screen.dart';
@@ -19,12 +19,10 @@ import 'auth/login_page.dart';
 import 'auth/registro_page.dart';
 import 'auth/recuperacao_page.dart';
 
-// -----------------------------------------------------------------------------
-// Função principal do aplicativo
-// -----------------------------------------------------------------------------
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 1. Inicializa .env
   try {
     await dotenv.load(fileName: ".env");
     print("✅ .env carregado com sucesso!");
@@ -32,6 +30,7 @@ Future<void> main() async {
     print("❌ Erro ao carregar .env: $e");
   }
 
+  // 2. Inicializa Supabase
   try {
     await Supabase.initialize(
       url: dotenv.env['SUPABASE_URL']!,
@@ -42,8 +41,14 @@ Future<void> main() async {
     print("❌ Erro ao conectar Supabase: $e");
   }
 
-  // ATUALIZAÇÃO: Envolvemos o App com o ChangeNotifierProvider.
-  // Isso disponibiliza o ThemeProvider para toda a árvore de widgets.
+  // 3. Inicializa notificações locais
+  try {
+    await NotificationService().init();
+    print("✅ Notification Service inicializado com sucesso!");
+  } catch (e) {
+    print("❌ Erro ao inicializar Notification Service: $e");
+  }
+
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
@@ -52,39 +57,28 @@ Future<void> main() async {
   );
 }
 
-// -----------------------------------------------------------------------------
-// Classe principal do aplicativo
-// -----------------------------------------------------------------------------
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // ATUALIZAÇÃO: Consumimos o ThemeProvider para obter o estado do tema.
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      // ATUALIZAÇÃO: As propriedades de tema agora são controladas pelo Provider.
       themeMode: themeProvider.themeMode,
       theme: MyThemes.lightTheme,
       darkTheme: MyThemes.darkTheme,
-
       initialRoute: '/splash',
       routes: {
-        // Telas Auth
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/forgot': (context) => const ForgotPasswordPage(),
-
-        // Telas principais do usuário
         '/splash': (context) => const SplashScreen(),
         '/dashboard': (context) => const DashboardPage(),
         '/perfil': (context) => const PerfilPage(),
         '/salas': (context) => const SalasFavoritasPage(),
         '/config': (context) => const ConfigPage(),
-
-        // Telas Admin
         '/admindashboard': (context) => const AdminDashboardPage(),
       },
     );
