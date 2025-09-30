@@ -29,7 +29,7 @@ class Sala {
   });
 
   factory Sala.fromJson(Map<String, dynamic> json, List<String> itens, double media) {
-    double? _parseDouble(dynamic value) {
+    double? parseDouble(dynamic value) {
       if (value == null) return null;
       if (value is double) return value;
       if (value is int) return value.toDouble();
@@ -45,8 +45,8 @@ class Sala {
       url: json['url'],
       itens: itens,
       mediaAvaliacoes: media,
-      latitude: _parseDouble(json['latitude']),
-      longitude: _parseDouble(json['longitude']),
+      latitude: parseDouble(json['latitude']),
+      longitude: parseDouble(json['longitude']),
     );
   }
 }
@@ -77,8 +77,6 @@ class _ReservasPageState extends State<ReservasPage> {
       List<Sala> salas = [];
 
       for (final row in response) {
-        debugPrint("Dados da sala recebidos do Supabase: $row");
-
         final itensResponse = await supabase
             .from('salas_itens')
             .select('itens(nome)')
@@ -91,8 +89,7 @@ class _ReservasPageState extends State<ReservasPage> {
             .eq('sala_id', row['id']);
         double media = 0;
         if (avaliacoes.isNotEmpty) {
-          media = avaliacoes.map((a) => a['nota'] as int).reduce((a, b) => a + b) /
-              avaliacoes.length;
+          media = avaliacoes.map((a) => a['nota'] as int).reduce((a, b) => a + b) / avaliacoes.length;
         }
 
         salas.add(Sala.fromJson(row, itens, media));
@@ -106,9 +103,7 @@ class _ReservasPageState extends State<ReservasPage> {
       }
     } catch (e) {
       debugPrint("Erro ao carregar salas: $e");
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -119,7 +114,6 @@ class _ReservasPageState extends State<ReservasPage> {
       firstDate: DateTime.now(),
       lastDate: DateTime(2030),
     );
-
     if (dataEscolhida != null && mounted) {
       setState(() => _dataSelecionada = dataEscolhida);
     }
@@ -151,47 +145,48 @@ class _ReservasPageState extends State<ReservasPage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      // O Scaffold é necessário aqui para o ecrã de carregamento.
-      // O tema já define a cor de fundo correta.
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     final filteredSalas = _salas
         .where((s) => s.nome.toLowerCase().contains(searchQuery.toLowerCase()))
         .toList();
 
-    // Esta página não precisa de um Scaffold ou AppBar, pois ela é mostrada
-    // dentro do Dashboard, que já tem a estrutura principal.
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
           TextField(
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: "Pesquisar por nome",
-              prefixIcon: Icon(Icons.search),
+              prefixIcon: const Icon(Icons.search),
+              filled: true,
+              fillColor: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[850]
+                  : Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
             ),
-            onChanged: (value) {
-              setState(() => searchQuery = value);
-            },
+            onChanged: (value) => setState(() => searchQuery = value),
           ),
           const SizedBox(height: 16),
-          // Usamos um Align para garantir que o botão fica à esquerda.
           Align(
             alignment: Alignment.centerLeft,
             child: ElevatedButton.icon(
               onPressed: () => _selecionarData(context),
               icon: const Icon(Icons.date_range),
               label: Text(DateFormat('dd/MM/yyyy').format(_dataSelecionada)),
-              // CORREÇÃO: O estilo do botão foi removido. Agora ele usa
-              // as cores definidas no ThemeProvider para o modo claro e escuro.
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal[400],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 16),
-          // A lista agora está envolvida num Expanded para ocupar o espaço
-          // restante de forma segura e evitar erros de layout.
           Expanded(
             child: ListView.builder(
               itemCount: filteredSalas.length,
@@ -208,12 +203,13 @@ class _ReservasPageState extends State<ReservasPage> {
 
   Widget _buildSalaCard(Sala sala) {
     return Card(
-      // CORREÇÃO: A cor do Card agora é definida pelo tema,
-      // tornando-o mais escuro no modo escuro.
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 3,
-      clipBehavior: Clip.antiAlias, // Garante que o conteúdo respeita as bordas arredondadas.
+      clipBehavior: Clip.antiAlias,
+      color: Theme.of(context).brightness == Brightness.dark
+          ? Theme.of(context).colorScheme.surfaceContainerHighest
+          : Colors.white,
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -228,7 +224,7 @@ class _ReservasPageState extends State<ReservasPage> {
                   'url': sala.url,
                   'descricao': sala.itens.join(', '),
                   'media_avaliacoes': sala.mediaAvaliacoes,
-                  'ocupada': false, // Adicionar lógica se necessário
+                  'ocupada': false,
                   'latitude': sala.latitude,
                   'longitude': sala.longitude,
                 },
@@ -248,31 +244,30 @@ class _ReservasPageState extends State<ReservasPage> {
                   height: 180,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  // Adiciona um ecrã de carregamento e de erro para a imagem.
-                  loadingBuilder: (context, child, progress) {
-                    return progress == null ? child : const SizedBox(height: 180, child: Center(child: CircularProgressIndicator()));
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 180,
-                      color: Theme.of(context).colorScheme.surfaceVariant,
-                      child: Center(
-                          child: Icon(Icons.image_not_supported,
-                              size: 50,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                    );
-                  },
+                  loadingBuilder: (context, child, progress) =>
+                  progress == null
+                      ? child
+                      : const SizedBox(
+                    height: 180,
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 180,
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    child: Center(
+                        child: Icon(Icons.image_not_supported,
+                            size: 50,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  ),
                 )
                     : Container(
                   height: 180,
-                  // CORREÇÃO: Usamos uma cor do tema para o placeholder.
-                  color: Theme.of(context).colorScheme.surfaceVariant,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   child: Center(
-                      child: Icon(Icons.meeting_room,
-                          size: 50,
-                          // CORREÇÃO: Cor do ícone também vem do tema.
-                          // DEIXAR ESSES THEME.OF PQ ELE É DO TEMA ESCURO
-                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    child: Icon(Icons.meeting_room,
+                        size: 50,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
                 ),
                 Positioned(
                   top: 8,
@@ -282,7 +277,7 @@ class _ReservasPageState extends State<ReservasPage> {
                       favoritas.contains(sala.id)
                           ? Icons.favorite
                           : Icons.favorite_border,
-                      color: Colors.red, // Cores de destaque como esta podem ser mantidas
+                      color: Colors.red,
                     ),
                     onPressed: () => _toggleFavorito(sala.id),
                   ),
@@ -304,21 +299,15 @@ class _ReservasPageState extends State<ReservasPage> {
                     children: [
                       const Icon(Icons.location_on, size: 16, color: Colors.grey),
                       const SizedBox(width: 4),
-                      Text(
-                        sala.localizacao ?? '-',
-                        style: const TextStyle(color: Colors.grey),
-                      ),
+                      Text(sala.localizacao ?? '-',
+                          style: const TextStyle(color: Colors.grey)),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Text("Capacidade: ${sala.capacidade}"),
                   const SizedBox(height: 4),
                   Row(
-                    children: [
-                      _buildEstrelas(sala.mediaAvaliacoes),
-                      const SizedBox(width: 8),
-                      // ... (código das avaliações)
-                    ],
+                    children: [_buildEstrelas(sala.mediaAvaliacoes)],
                   ),
                 ],
               ),
@@ -329,4 +318,3 @@ class _ReservasPageState extends State<ReservasPage> {
     );
   }
 }
-
