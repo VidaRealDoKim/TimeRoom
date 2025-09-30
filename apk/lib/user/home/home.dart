@@ -15,6 +15,8 @@ class Sala {
   final String? url;
   final List<String> itens;
   final double mediaAvaliacoes;
+  final double? latitude;
+  final double? longitude;
 
   Sala({
     required this.id,
@@ -24,10 +26,19 @@ class Sala {
     this.url,
     required this.itens,
     required this.mediaAvaliacoes,
+    this.latitude,
+    this.longitude,
   });
 
   /// Construtor a partir de JSON (dados do Supabase)
   factory Sala.fromJson(Map<String, dynamic> json, List<String> itens, double media) {
+    double? _parseDouble(dynamic value) {
+      if (value == null) return null;
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      if (value is String) return double.tryParse(value);
+      return null;
+    }
     return Sala(
       id: json['id'],
       nome: json['nome'],
@@ -36,6 +47,8 @@ class Sala {
       url: json['url'],
       itens: itens,
       mediaAvaliacoes: media,
+      latitude: _parseDouble(json['latitude']),
+      longitude: _parseDouble(json['longitude']),
     );
   }
 }
@@ -73,9 +86,11 @@ class _HomePageState extends State<HomePage> {
             .select('name')
             .eq('id', userId)
             .single();
-        setState(() {
-          userName = profile['name'] as String?;
-        });
+        if (mounted) {
+          setState(() {
+            userName = profile['name'] as String?;
+          });
+        }
       }
     } catch (e) {
       debugPrint("Erro ao carregar nome do usuário: $e");
@@ -85,7 +100,7 @@ class _HomePageState extends State<HomePage> {
   /// Carrega a lista de salas
   Future<void> _loadSalas() async {
     try {
-      final response = await supabase.from('salas').select();
+      final response = await supabase.from('salas').select('*');
       List<Sala> salas = [];
 
       for (final row in response) {
@@ -108,13 +123,17 @@ class _HomePageState extends State<HomePage> {
         salas.add(Sala.fromJson(row, itens, media));
       }
 
-      setState(() {
-        _salas = salas;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _salas = salas;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       debugPrint("Erro ao carregar salas: $e");
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -127,9 +146,11 @@ class _HomePageState extends State<HomePage> {
           .from('salas_favoritas')
           .select('sala_id')
           .eq('usuario_id', userId);
-      setState(() {
-        favoritas = data.map<String>((item) => item['sala_id'] as String).toSet();
-      });
+      if (mounted) {
+        setState(() {
+          favoritas = data.map<String>((item) => item['sala_id'] as String).toSet();
+        });
+      }
     } catch (e) {
       debugPrint("Erro ao carregar favoritas: $e");
     }
@@ -143,7 +164,7 @@ class _HomePageState extends State<HomePage> {
       firstDate: DateTime.now(),
       lastDate: DateTime(2030),
     );
-    if (dataEscolhida != null) setState(() => _dataSelecionada = dataEscolhida);
+    if (dataEscolhida != null && mounted) setState(() => _dataSelecionada = dataEscolhida);
   }
 
   /// Exibe estrelas de avaliação
@@ -182,122 +203,119 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // O Dashboard já fornece um Scaffold e AppBar, então esta página
+    // só precisa de retornar o seu conteúdo.
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
-    return Scaffold(
-      //backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: Text("Olá${userName != null ? ', $userName' : ''}!"),
-        //backgroundColor: const Color(0xFF2CC0AF),
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Resumo de salas
-            Container(
-              padding: const EdgeInsets.all(16),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Mensagem de boas-vindas
+          Text(
+            "Olá${userName != null ? ', $userName' : ''}!",
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+
+          // Resumo de salas
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              // CORREÇÃO: Usa a cor primária do tema.
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Salas disponíveis",
+                      // CORREÇÃO: Usa a cor de texto que contrasta com a cor primária.
+                      style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.8)),
+                    ),
+                    Text(
+                      "${_salas.length}",
+                      style: TextStyle(
+                        // CORREÇÃO: Usa a cor de texto que contrasta com a cor primária.
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                ElevatedButton.icon(
+                  onPressed: () => _selecionarData(context),
+                  icon: const Icon(Icons.date_range),
+                  label: Text(
+                    DateFormat('dd/MM/yyyy').format(_dataSelecionada),
+                  ),
+                  // CORREÇÃO: O estilo do botão agora vem do tema global.
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Campo de pesquisa que leva para SearchPage
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SearchPage()),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                //color: const Color(0xFF2CC0AF),
+                // CORREÇÃO: Usa a cor da superfície do tema (branco no modo claro, cinza escuro no modo escuro).
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                  ),
+                ],
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Salas disponíveis",
-                        //style: TextStyle(color: Colors.white70),
-                      ),
-                      Text(
-                        "${_salas.length}",
-                        style: const TextStyle(
-                          //color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () => _selecionarData(context),
-                    icon: const Icon(Icons.date_range, color: Colors.white),
-                    label: Text(
-                      DateFormat('dd/MM/yyyy').format(_dataSelecionada),
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white24,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
+                  Icon(Icons.search, color: Theme.of(context).hintColor),
+                  const SizedBox(width: 8),
+                  Text(
+                    "Pesquisar por nome",
+                    style: TextStyle(color: Theme.of(context).hintColor, fontSize: 16),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+          ),
+          const SizedBox(height: 16),
 
-            // Campo de pesquisa que leva para SearchPage
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SearchPage()),
-                );
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                height: 50,
-                decoration: BoxDecoration(
-                 // color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: const [
-                   Icon(Icons.search, color: Colors.grey),
-                    SizedBox(width: 8),
-                    Text(
-                      "Pesquisar por nome",
-                      style: TextStyle(color: Colors.grey, fontSize: 16),
-                    ),
-                  ],
-                ),
-              ),
+          // Grid de salas
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _salas.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.8,
             ),
-            const SizedBox(height: 16),
-
-            // Grid de salas
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _salas.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.8,
-              ),
-              itemBuilder: (context, index) {
-                final sala = _salas[index];
-                return _buildSalaCard(sala);
-              },
-            ),
-          ],
-        ),
+            itemBuilder: (context, index) {
+              final sala = _salas[index];
+              return _buildSalaCard(sala);
+            },
+          ),
+        ],
       ),
     );
   }
@@ -305,8 +323,10 @@ class _HomePageState extends State<HomePage> {
   /// Card da sala
   Widget _buildSalaCard(Sala sala) {
     return Card(
+      // CORREÇÃO: A cor do card é agora controlada pelo tema.
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 3,
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -322,6 +342,8 @@ class _HomePageState extends State<HomePage> {
                   'descricao': sala.itens.join(', '),
                   'media_avaliacoes': sala.mediaAvaliacoes,
                   'ocupada': false,
+                  'latitude': sala.latitude,
+                  'longitude': sala.longitude,
                 },
                 dataSelecionada: _dataSelecionada,
               ),
@@ -333,24 +355,23 @@ class _HomePageState extends State<HomePage> {
           children: [
             Expanded(
               child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                    child: sala.url != null
-                        ? Image.network(
-                      sala.url!,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    )
-                        : Container(
-                      //color: Colors.grey[300],
-                      child: const Center(
-                          child: Icon(Icons.meeting_room, size: 50)),
-                    ),
+                  (sala.url != null && sala.url!.isNotEmpty)
+                      ? Image.network(
+                    sala.url!,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  )
+                      : Container(
+                    // CORREÇÃO: A cor do placeholder vem do tema.
+                    color: Theme.of(context).colorScheme.surfaceVariant,
+                    child: Center(
+                        child: Icon(Icons.meeting_room, size: 40, color: Theme.of(context).colorScheme.onSurfaceVariant,)),
                   ),
                   Positioned(
-                    top: 8,
-                    right: 8,
+                    top: 4,
+                    right: 4,
                     child: IconButton(
                       icon: Icon(
                         favoritas.contains(sala.id)
@@ -373,13 +394,17 @@ class _HomePageState extends State<HomePage> {
                     sala.nome,
                     style: const TextStyle(
                         fontWeight: FontWeight.bold, fontSize: 16),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                      Icon(Icons.location_on, size: 14, color: Theme.of(context).hintColor),
                       const SizedBox(width: 4),
-                      Text(sala.localizacao ?? '-', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                      Expanded(
+                        child: Text(sala.localizacao ?? '-', style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis,),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
