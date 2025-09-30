@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../perfil/mapa_sala_page.dart';
 
 class DetalhesReservadoPage extends StatefulWidget {
   final Map<String, dynamic> reserva;
@@ -16,6 +17,7 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Usamos widget.reserva para aceder aos dados em todo o método build.
     final reserva = widget.reserva;
     final status = reserva['status'] ?? '-';
     final statusColor = status == 'aceito'
@@ -46,16 +48,15 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content:
-          Text('Reserva confirmada com sucesso! Você pode acessar a sala.'),
+          Text('Reserva confirmada com sucesso! Você pode aceder à sala.'),
         ),
       );
-      // Aqui você pode atualizar no banco que a presença foi confirmada
     }
 
     void compartilharReserva() {
       final text =
-          'Minha reserva na sala ${reserva['nome']} em ${DateFormat('dd/MM/yyyy').format(reserva['data'])} das ${reserva['horaInicio']} às ${reserva['horaFim']} foi confirmada!';
-      SharePlus.instance.share(text as ShareParams);
+          'A minha reserva na sala ${reserva['nome']} em ${DateFormat('dd/MM/yyyy').format(reserva['data'])} das ${reserva['horaInicio']} às ${reserva['horaFim']} foi confirmada!';
+      Share.share(text);
     }
 
     Future<void> cancelarReserva() async {
@@ -90,8 +91,7 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Detalhes da Reserva"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        // CORREÇÃO: Cores removidas para obedecer ao tema claro/escuro.
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -126,7 +126,53 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
                 const SizedBox(height: 8),
                 Text("Capacidade: ${reserva['capacidade'] ?? '-'}"),
                 Text("Localização: ${reserva['localizacao'] ?? '-'}"),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
+
+                // --- BOTÃO DO MAPA ADICIONADO AQUI ---
+                // Este é o local perfeito para o botão, junto à informação da localização.
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.map_outlined),
+                  label: const Text('Ver no Mapa'),
+                  onPressed: () {
+                    // Função auxiliar para converter o valor para double de forma segura.
+                    double? _parseDouble(dynamic value) {
+                      if (value == null) return null;
+                      if (value is double) return value;
+                      if (value is int) return value.toDouble();
+                      if (value is String) return double.tryParse(value);
+                      return null;
+                    }
+
+                    // CORREÇÃO: Usamos 'reserva' em vez de 'sala'.
+                    final double latitudeDaSala = _parseDouble(reserva['latitude']) ?? 0.0;
+                    final double longitudeDaSala = _parseDouble(reserva['longitude']) ?? 0.0;
+                    final String nomeDaSala = reserva['nome'] ?? 'Localização Desconhecida';
+
+                    if (latitudeDaSala == 0.0 && longitudeDaSala == 0.0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Localização não disponível para esta sala.'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                      return;
+                    }
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MapaSalaPage(
+                          latitude: latitudeDaSala,
+                          longitude: longitudeDaSala,
+                          nomeSala: nomeDaSala,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                // --- FIM DO BOTÃO DO MAPA ---
+
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     const Text("Status: ",
@@ -206,7 +252,7 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
                     ),
                   if (confirmado)
                     Text(
-                      "Presença confirmada ✅ Você pode acessar a sala.",
+                      "Presença confirmada ✅ Você pode aceder à sala.",
                       style: TextStyle(
                           color: Colors.green, fontWeight: FontWeight.bold),
                     ),
