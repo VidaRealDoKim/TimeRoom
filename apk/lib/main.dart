@@ -27,6 +27,7 @@ import 'auth/recuperacao_page.dart';
 // Telas adicionais de perfil
 import 'user/perfil/termos_page.dart';
 import 'user/perfil/politica_privacidade_page.dart';
+import 'user/perfil/editar_perfil.dart';
 
 // -----------------------------------------------------------------------------
 // Função principal
@@ -97,6 +98,7 @@ class MyApp extends StatelessWidget {
         '/splash': (context) => const SplashScreen(),
         '/dashboard': (context) => const DashboardPage(),
         '/perfil': (context) => const PerfilPage(),
+        '/editarPerfil': (context) => const EditarPerfilPage(),
         '/salas': (context) => const SalasFavoritasPage(),
         '/config': (context) => const ConfigPage(),
         '/termos': (context) => const TermosPage(),
