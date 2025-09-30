@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// -----------------------------------------------------------------------------
-// Tela de Perfil do Usuário (Com edição e logout com confirmação)
-// ** VERSÃO ATUALIZADA SEM A OPÇÃO DE NOTIFICAÇÕES **
-// -----------------------------------------------------------------------------
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
 
@@ -15,30 +11,15 @@ class PerfilPage extends StatefulWidget {
 class _PerfilPageState extends State<PerfilPage> {
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  // Estado do Widget
-  // REMOÇÃO: A variável _notificacoesAtivadas foi removida pois não é mais necessária.
   bool _loading = true;
-  bool _editMode = false; // Ativa o modo de edição
   String? _avatarUrl;
   String? _name;
   String? _email;
-
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _avatarController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _fetchUserProfile();
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _avatarController.dispose();
-    super.dispose();
   }
 
   // ---------------------------------------------------------------------------
@@ -51,20 +32,14 @@ class _PerfilPageState extends State<PerfilPage> {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return;
 
-      final response = await _supabase
-          .from('profiles')
-          .select()
-          .eq('id', userId)
-          .single();
+      final response =
+      await _supabase.from('profiles').select().eq('id', userId).single();
 
       if (response != null && mounted) {
         setState(() {
           _name = response['name'] ?? '';
           _email = response['email'] ?? '';
           _avatarUrl = response['avatar_url'];
-          _nameController.text = _name!;
-          _emailController.text = _email!;
-          _avatarController.text = _avatarUrl ?? '';
           _loading = false;
         });
       }
@@ -74,56 +49,6 @@ class _PerfilPageState extends State<PerfilPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erro ao carregar perfil: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Atualiza perfil do usuário no Supabase
-  // ---------------------------------------------------------------------------
-  Future<void> _updateProfile() async {
-    setState(() => _loading = true);
-
-    try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return;
-
-      final updates = {
-        'name': _nameController.text,
-        'email': _emailController.text,
-        'avatar_url': _avatarController.text.isNotEmpty
-            ? _avatarController.text
-            : null,
-        'updated_at': DateTime.now().toIso8601String(),
-      };
-
-      await _supabase.from('profiles').update(updates).eq('id', userId);
-
-      if (mounted) {
-        setState(() {
-          _name = _nameController.text;
-          _email = _emailController.text;
-          _avatarUrl =
-          _avatarController.text.isNotEmpty ? _avatarController.text : null;
-          _editMode = false;
-          _loading = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Perfil atualizado com sucesso!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro ao atualizar perfil: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -185,8 +110,13 @@ class _PerfilPageState extends State<PerfilPage> {
         _buildMenuOption(
           icon: Icons.person_outline,
           text: 'Editar Perfil',
-          onTap: () {
-            setState(() => _editMode = !_editMode);
+          onTap: () async {
+            // Abre a tela editar_perfil.dart e aguarda retorno
+            final atualizado =
+            await Navigator.pushNamed(context, '/editarPerfil');
+            if (atualizado == true) {
+              _fetchUserProfile(); // recarrega os dados ao voltar
+            }
           },
         ),
         _buildMenuOption(
@@ -196,23 +126,11 @@ class _PerfilPageState extends State<PerfilPage> {
             Navigator.pushNamed(context, '/config');
           },
         ),
-        // REMOÇÃO: A chamada para construir o botão de notificação foi removida daqui.
         _buildMenuOption(
           icon: Icons.logout,
           text: 'Log Out',
           onTap: _confirmarLogout,
         ),
-        if (_editMode)
-          Padding(
-            padding: const EdgeInsets.only(top: 20),
-            child: ElevatedButton(
-              onPressed: _updateProfile,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1ABC9C),
-              ),
-              child: const Text('Salvar alterações'),
-            ),
-          ),
       ],
     );
   }
@@ -231,40 +149,18 @@ class _PerfilPageState extends State<PerfilPage> {
         ),
         const SizedBox(width: 15),
         Expanded(
-          child: _editMode
-              ? Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Nome'),
-              ),
-              const SizedBox(height: 5),
-              TextField(
-                controller: _emailController,
-                decoration: const InputDecoration(labelText: 'E-mail'),
-              ),
-              const SizedBox(height: 5),
-              TextField(
-                controller: _avatarController,
-                decoration:
-                const InputDecoration(labelText: 'URL da Imagem'),
-              ),
-            ],
-          )
-              : Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 _name ?? '',
-                style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold),
+                style:
+                const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 5),
               Text(
                 _email ?? '',
-                style:
-                const TextStyle(fontSize: 14, color: Colors.grey),
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
             ],
           ),
@@ -289,10 +185,4 @@ class _PerfilPageState extends State<PerfilPage> {
       onTap: onTap,
     );
   }
-
-// ---------------------------------------------------------------------------
-// REMOÇÃO: O método inteiro para construir o item de notificação foi removido.
-// ---------------------------------------------------------------------------
-// Widget _buildNotificationOption() { ... }
 }
-
