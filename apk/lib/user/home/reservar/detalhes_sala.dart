@@ -3,7 +3,9 @@ import '../../perfil/mapa_sala_page.dart';
 import 'nova_reserva.dart';
 
 /// Página de detalhes da sala
-/// Recebe um Map com os dados da sala e a data selecionada
+/// Recebe:
+/// - [sala]: um Map com todos os dados da sala (nome, capacidade, descrição, URL, coordenadas, status, etc.)
+/// - [dataSelecionada]: a data que o usuário selecionou para a reserva
 class DetalhesSalaPage extends StatelessWidget {
   final Map<String, dynamic> sala;
   final DateTime dataSelecionada;
@@ -14,7 +16,8 @@ class DetalhesSalaPage extends StatelessWidget {
     required this.dataSelecionada,
   });
 
-  /// Função para navegar para a página de reserva
+  /// Navega para a página de criação de nova reserva
+  /// Passa os dados da sala e a data selecionada
   void _reservarSala(BuildContext context) async {
     await Navigator.push(
       context,
@@ -29,14 +32,15 @@ class DetalhesSalaPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Status da sala (ocupada ou livre) e cor do indicador
+    // Define o status da sala com base no campo 'ocupada' do Map
     final status = sala['ocupada'] == true ? "Ocupada" : "Livre";
     final statusColor = sala['ocupada'] == true ? Colors.red : Colors.green;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(sala['nome'] ?? 'Detalhes da Sala'),
-        // CORREÇÃO: Cores removidas para obedecer ao tema claro/escuro
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -44,69 +48,42 @@ class DetalhesSalaPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Status da sala e capacidade
+            // Linha com o status da sala e capacidade
             Row(
               children: [
+                // Indicador de status (ocupada/livre)
                 Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: statusColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(
-                    status,
-                    style: const TextStyle(color: Colors.white),
-                  ),
+                  child: Text(status, style: const TextStyle(color: Colors.white)),
                 ),
                 const SizedBox(width: 16),
+                // Mostra a capacidade da sala
                 Text('Capacidade: ${sala['capacidade'] ?? '-'}'),
               ],
             ),
             const SizedBox(height: 16),
-
-            // Localização (botão para abrir mapa)
+            // Botão para abrir a sala no mapa
             Row(
               children: [
                 ElevatedButton.icon(
                   icon: const Icon(Icons.map_outlined),
                   label: const Text('Ver no Mapa'),
-                  // CORREÇÃO: Estilo removido para usar o tema da aplicação
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1ABC9C),
+                    foregroundColor: Colors.white,
+                  ),
                   onPressed: () {
-                    // --- CORREÇÃO APLICADA AQUI ---
-                    // Usamos os dados REAIS do objeto 'sala' que a página recebeu.
-                    // A função auxiliar '_parseDouble' garante que a conversão funciona corretamente.
-                    double? _parseDouble(dynamic value) {
-                      if (value == null) return null;
-                      if (value is double) return value;
-                      if (value is int) return value.toDouble();
-                      if (value is String) return double.tryParse(value);
-                      return null;
-                    }
-
-                    final double latitudeDaSala = _parseDouble(sala['latitude']) ?? 0.0;
-                    final double longitudeDaSala = _parseDouble(sala['longitude']) ?? 0.0;
-                    final String nomeDaSala = sala['nome'] ?? 'Localização Desconhecida';
-
-                    // Verificação para não abrir o mapa se as coordenadas forem 0.0
-                    if (latitudeDaSala == 0.0 && longitudeDaSala == 0.0) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Localização não disponível para esta sala.'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                      return; // Não continua
-                    }
-
-                    // Comando para abrir a página do mapa com os dados corretos.
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => MapaSalaPage(
-                          latitude: latitudeDaSala,
-                          longitude: longitudeDaSala,
-                          nomeSala: nomeDaSala,
+                          latitude: sala['latitude'] ?? -26.9187,
+                          longitude: sala['longitude'] ?? -49.0661,
+                          nomeSala: sala['nome'] ?? 'Sala',
                         ),
                       ),
                     );
@@ -115,22 +92,23 @@ class DetalhesSalaPage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-
             // Descrição da sala
             Text(
               sala['descricao'] ?? '-',
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 32),
-
-            // Botão de reservar (ativa apenas se a sala estiver livre)
+            // Botão de reservar
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: sala['ocupada'] == true
-                    ? null
-                    : () => _reservarSala(context),
-                // CORREÇÃO: Estilo removido para usar o tema
+                // Desabilita se a sala estiver ocupada
+                onPressed: sala['ocupada'] == true ? null : () => _reservarSala(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2CC0AF),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
                 child: const Text(
                   'Reservar',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -143,4 +121,3 @@ class DetalhesSalaPage extends StatelessWidget {
     );
   }
 }
-
