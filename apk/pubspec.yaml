@@ -11,6 +11,9 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Estado e gerenciamento
+  provider: ^6.1.2
+
   # Calendário
   table_calendar: ^3.0.9
 
@@ -39,14 +42,14 @@ dependencies:
   # Compartilhar conteúdo
   share_plus: ^12.0.0
 
-  provider: ^6.1.2
-
+  # Imagem e arquivos
+  image_picker: ^1.0.7
+  path: ^1.8.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-  provider: ^6.1.2
   google_maps_flutter: ^2.5.0
   geolocator: ^10.1.0
 
