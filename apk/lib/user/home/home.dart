@@ -16,9 +16,6 @@ class Sala {
   final String? url;
   final List<String> itens;
   final double mediaAvaliacoes;
-  // CORREÇÃO 1: Adicionadas as propriedades de localização que faltavam.
-  final double? latitude;
-  final double? longitude;
 
   Sala({
     required this.id,
@@ -28,21 +25,9 @@ class Sala {
     this.url,
     required this.itens,
     required this.mediaAvaliacoes,
-    // Adicionadas ao construtor.
-    this.latitude,
-    this.longitude,
   });
 
   factory Sala.fromJson(Map<String, dynamic> json, List<String> itens, double media) {
-    // Função auxiliar para converter os dados de localização de forma segura.
-    double? _parseDouble(dynamic value) {
-      if (value == null) return null;
-      if (value is double) return value;
-      if (value is int) return value.toDouble();
-      if (value is String) return double.tryParse(value);
-      return null;
-    }
-
     return Sala(
       id: json['id'],
       nome: json['nome'],
@@ -51,9 +36,6 @@ class Sala {
       url: json['url'],
       itens: itens,
       mediaAvaliacoes: media,
-      // CORREÇÃO 2: A latitude e longitude são extraídas do JSON do Supabase.
-      latitude: _parseDouble(json['latitude']),
-      longitude: _parseDouble(json['longitude']),
     );
   }
 }
@@ -90,11 +72,9 @@ class _HomePageState extends State<HomePage> {
             .select('name')
             .eq('id', userId)
             .single();
-        if (mounted) {
-          setState(() {
-            userName = profile['name'] as String?;
-          });
-        }
+        setState(() {
+          userName = profile['name'] as String?;
+        });
       }
     } catch (e) {
       debugPrint("Erro ao carregar nome do usuário: $e");
@@ -103,8 +83,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadSalas() async {
     try {
-      // CORREÇÃO: Usar o '*' garante que as colunas 'latitude' e 'longitude' são buscadas.
-      final response = await supabase.from('salas').select('*');
+      final response = await supabase.from('salas').select();
       List<Sala> salas = [];
 
       for (final row in response) {
@@ -127,17 +106,13 @@ class _HomePageState extends State<HomePage> {
         salas.add(Sala.fromJson(row, itens, media));
       }
 
-      if (mounted) {
-        setState(() {
-          _salas = salas;
-          _isLoading = false;
-        });
-      }
+      setState(() {
+        _salas = salas;
+        _isLoading = false;
+      });
     } catch (e) {
       debugPrint("Erro ao carregar salas: $e");
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      setState(() => _isLoading = false);
     }
   }
 
@@ -149,11 +124,9 @@ class _HomePageState extends State<HomePage> {
           .from('salas_favoritas')
           .select('sala_id')
           .eq('usuario_id', userId);
-      if (mounted) {
-        setState(() {
-          favoritas = data.map<String>((item) => item['sala_id'] as String).toSet();
-        });
-      }
+      setState(() {
+        favoritas = data.map<String>((item) => item['sala_id'] as String).toSet();
+      });
     } catch (e) {
       debugPrint("Erro ao carregar favoritas: $e");
     }
@@ -166,7 +139,7 @@ class _HomePageState extends State<HomePage> {
       firstDate: DateTime.now(),
       lastDate: DateTime(2030),
     );
-    if (dataEscolhida != null && mounted) setState(() => _dataSelecionada = dataEscolhida);
+    if (dataEscolhida != null) setState(() => _dataSelecionada = dataEscolhida);
   }
 
   Widget _buildEstrelas(double media) {
@@ -349,10 +322,6 @@ class _HomePageState extends State<HomePage> {
                   'descricao': sala.itens.join(', '),
                   'media_avaliacoes': sala.mediaAvaliacoes,
                   'ocupada': false,
-                  // --- CORREÇÃO 3: As coordenadas da sala agora são incluídas ---
-                  // ao navegar para a página de detalhes.
-                  'latitude': sala.latitude,
-                  'longitude': sala.longitude,
                 },
                 dataSelecionada: _dataSelecionada,
               ),
@@ -428,4 +397,3 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-
