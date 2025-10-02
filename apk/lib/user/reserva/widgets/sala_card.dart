@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../pages/detalhes_sala.dart';
+import '../../home/reservar/detalhes_sala.dart';
 
 class SalaCard extends StatelessWidget {
   final Map<String, dynamic>? sala; // usado em HomePage/DetalhesSalaPage

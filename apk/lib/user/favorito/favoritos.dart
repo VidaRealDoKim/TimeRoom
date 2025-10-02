@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../reserva/pages/nova_reserva.dart';
+import '../home/reservar/nova_reserva.dart';
 
 // -----------------------------------------------------------------------------
 // Modelo de Dados (Sala)

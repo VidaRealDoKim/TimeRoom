@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'pages/detalhes_sala.dart';
+import 'package:apk/user//home/reservar/detalhes_sala.dart'; // Página de detalhes da sala
 
 final supabase = Supabase.instance.client;
 
+/// Modelo de dados para Sala
 class Sala {
   final String id;
   final String nome;
@@ -51,14 +52,15 @@ class Sala {
   }
 }
 
-class ReservasPage extends StatefulWidget {
-  const ReservasPage({super.key});
+/// Página para listar todas as salas disponíveis
+class SalasPage extends StatefulWidget {
+  const SalasPage({super.key});
 
   @override
-  State<ReservasPage> createState() => _ReservasPageState();
+  State<SalasPage> createState() => _SalasPageState();
 }
 
-class _ReservasPageState extends State<ReservasPage> {
+class _SalasPageState extends State<SalasPage> {
   List<Sala> _salas = [];
   bool _isLoading = true;
   String searchQuery = '';
@@ -71,6 +73,7 @@ class _ReservasPageState extends State<ReservasPage> {
     _loadSalas();
   }
 
+  /// Carrega salas e avaliações do Supabase
   Future<void> _loadSalas() async {
     try {
       final response = await supabase.from('salas').select('*');
@@ -244,21 +247,6 @@ class _ReservasPageState extends State<ReservasPage> {
                   height: 180,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  loadingBuilder: (context, child, progress) =>
-                  progress == null
-                      ? child
-                      : const SizedBox(
-                    height: 180,
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 180,
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    child: Center(
-                        child: Icon(Icons.image_not_supported,
-                            size: 50,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                  ),
                 )
                     : Container(
                   height: 180,
@@ -291,8 +279,7 @@ class _ReservasPageState extends State<ReservasPage> {
                 children: [
                   Text(
                     sala.nome,
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -306,9 +293,7 @@ class _ReservasPageState extends State<ReservasPage> {
                   const SizedBox(height: 4),
                   Text("Capacidade: ${sala.capacidade}"),
                   const SizedBox(height: 4),
-                  Row(
-                    children: [_buildEstrelas(sala.mediaAvaliacoes)],
-                  ),
+                  Row(children: [_buildEstrelas(sala.mediaAvaliacoes)]),
                 ],
               ),
             ),

@@ -1,18 +1,16 @@
 // -----------------------------------------------------------------------------
 // main.dart
 // Arquivo principal de inicialização do app.
-// Configura o Supabase, carrega variáveis de ambiente, e gerencia o tema global
-// usando Provider (ThemeProvider).
+// Configura o Supabase, carrega variáveis de ambiente e gerencia o tema global.
 // -----------------------------------------------------------------------------
 
-import 'package:apk/providers/theme_provider.dart';
-import 'package:apk/user/favorito/favoritos.dart';
-import 'package:apk/user/perfil/config.dart';
-import 'package:apk/user/perfil/perfil.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+// Providers
+import 'package:apk/providers/theme_provider.dart';
 
 // Telas principais
 import 'user/dashboard.dart';
@@ -24,10 +22,13 @@ import 'auth/login_page.dart';
 import 'auth/registro_page.dart';
 import 'auth/recuperacao_page.dart';
 
-// Telas adicionais de perfil
-import 'user/perfil/termos_page.dart';
-import 'user/perfil/politica_privacidade_page.dart';
-import 'user/perfil/editar_perfil.dart';
+// Telas de usuário
+import 'package:apk/user/perfil/perfil.dart';
+import 'package:apk/user/perfil/config.dart';
+import 'package:apk/user/perfil/termos_page.dart';
+import 'package:apk/user/perfil/politica_privacidade_page.dart';
+import 'package:apk/user/perfil/editar_perfil.dart';
+import 'package:apk/user/favorito/favoritos.dart';
 
 // -----------------------------------------------------------------------------
 // Função principal
@@ -54,7 +55,7 @@ Future<void> main() async {
     debugPrint("❌ Erro ao conectar Supabase: $e");
   }
 
-  // Rodando app com Provider para controlar o tema global
+  // Rodando app com Provider para controle global do tema
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
