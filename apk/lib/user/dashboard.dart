@@ -188,15 +188,15 @@ class _DashboardPageState extends State<DashboardPage> {
             children: [
               // Cabeçalho com perfil
               DrawerHeader(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
-                ),
+                // CORREÇÃO 1: A cor do cabeçalho agora vem do tema da AppBar,
+                // garantindo que ela fica escura no modo escuro e verde-água no modo claro.
+                decoration: BoxDecoration(color: theme.appBarTheme.backgroundColor),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     CircleAvatar(
                       radius: 30,
-                      backgroundColor: theme.colorScheme.onPrimary,
+                      backgroundColor: Colors.white,
                       backgroundImage: _profile?['avatar_url'] != null
                           ? NetworkImage(_profile!['avatar_url'])
                           : null,
@@ -204,7 +204,12 @@ class _DashboardPageState extends State<DashboardPage> {
                           ? Icon(
                         Icons.person,
                         size: 40,
-                        color: theme.colorScheme.primary,
+                        // CORREÇÃO 2: A cor do ícone agora depende do tema.
+                        // Se o tema for escuro, o ícone fica escuro.
+                        // Se for claro, fica verde-água (a cor primária).
+                        color: theme.brightness == Brightness.dark
+                            ? Colors.grey[800] // Cor para o modo escuro
+                            : theme.colorScheme.primary, // Cor para o modo claro
                       )
                           : null,
                     ),
@@ -212,7 +217,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     Text(
                       _profile?['name'] ?? "Usuário",
                       style: TextStyle(
-                        color: theme.colorScheme.onPrimary,
+                        color: Colors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
@@ -220,7 +225,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     Text(
                       _profile?['email'] ?? "",
                       style: TextStyle(
-                        color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
+                        color: Colors.white,
                         fontSize: 14,
                       ),
                     ),

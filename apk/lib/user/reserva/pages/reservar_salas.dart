@@ -210,8 +210,8 @@ class _ReservasPageState extends State<ReservasPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Minhas Reservas"),
-        backgroundColor: const Color(0xFFFFFFFF),
-        foregroundColor: Colors.black,
+        //backgroundColor: const Color(0xFFFFFFFF),
+        //foregroundColor: Colors.black,
       ),
       body: _reservas.isEmpty
           ? const Center(

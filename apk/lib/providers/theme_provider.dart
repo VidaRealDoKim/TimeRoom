@@ -11,7 +11,6 @@ class ThemeProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
 
   ThemeMode get themeMode => _themeMode;
-
   String get themeModeString {
     switch (_themeMode) {
       case ThemeMode.light:
@@ -61,73 +60,92 @@ class ThemeProvider extends ChangeNotifier {
 
   // --- DEFINIÇÕES DE TEMA CENTRALIZADAS ---
 
-  // ======================
   // Tema Claro
-  // ======================
   static final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
     primarySwatch: Colors.teal,
     scaffoldBackgroundColor: Colors.grey[100],
-
     appBarTheme: const AppBarTheme(
       backgroundColor: Color(0xFF1ABC9C),
       foregroundColor: Colors.white,
-      elevation: 0,
     ),
-
-    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: Color(0xFF1ABC9C),
-      selectedItemColor: Colors.white,
-      unselectedItemColor: Colors.white70,
-    ),
-
+    // --- CORREÇÃO FINAL APLICADA AQUI ---
+    // Usamos o nome de classe correto: 'BottomAppBarThemeData'.
     bottomAppBarTheme: const BottomAppBarThemeData(
       color: Color(0xFF1ABC9C),
-      surfaceTintColor: Colors.transparent,
-      elevation: 6,
     ),
-
     cardColor: Colors.white,
-
     colorScheme: const ColorScheme.light(
       primary: Color(0xFF1ABC9C),
       secondary: Color(0xFF16A085),
-      surface: Color(0xFFF5F5F5), // substitui background
+      background: Color(0xFFF5F5F5),
+      surface: Colors.white,
+      onPrimary: Colors.white, // Cor do texto/ícones em cima da cor primária
+    ),
+
+    // Define um estilo global para todos os ElevatedButtons.
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ButtonStyle(
+        backgroundColor: MaterialStateProperty.all(const Color(0xFF1ABC9C)),
+        foregroundColor: MaterialStateProperty.all(Colors.white),
+        padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 16)),
+        shape: MaterialStateProperty.all(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        textStyle: MaterialStateProperty.all(
+          const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
     ),
   );
 
-  // ======================
   // Tema Escuro
-  // ======================
   static final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
     primarySwatch: Colors.teal,
     scaffoldBackgroundColor: const Color(0xFF121212),
-
     appBarTheme: const AppBarTheme(
       backgroundColor: Color(0xFF222222),
       foregroundColor: Colors.white,
-      elevation: 0,
     ),
-
-    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: Color(0xFF222222),
-      selectedItemColor: Color(0xFF1ABC9C),
-      unselectedItemColor: Colors.grey,
-    ),
-
+    // --- CORREÇÃO FINAL APLICADA AQUI ---
+    // Usamos o nome de classe correto: 'BottomAppBarThemeData'.
     bottomAppBarTheme: const BottomAppBarThemeData(
       color: Color(0xFF222222),
-      surfaceTintColor: Colors.transparent,
-      elevation: 6,
     ),
-
     cardColor: const Color(0xFF1E1E1E),
-
     colorScheme: const ColorScheme.dark(
       primary: Color(0xFF1ABC9C),
       secondary: Color(0xFF16A085),
-      surface: Color(0xFF121212), // substitui background
+      background: Color(0xFF121212),
+      surface: Color(0xFF1E1E1E),
+      onPrimary: Colors.black, // Cor do texto/ícones em cima da cor primária
+    ),
+
+    // Define um estilo global para os ElevatedButtons no modo escuro.
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ButtonStyle(
+        backgroundColor: MaterialStateProperty.all(const Color(0xFF222222)),
+        foregroundColor: MaterialStateProperty.all(const Color(0xFF1ABC9C)),
+        padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 16)),
+        shape: MaterialStateProperty.all(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        textStyle: MaterialStateProperty.all(
+          const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
     ),
   );
 }
+

@@ -172,7 +172,7 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reserva - Sala'),
-        backgroundColor: const Color(0xFF2CC0AF),
+        //backgroundColor: const Color(0xFF2CC0AF),
         centerTitle: true,
       ),
       body: loading
@@ -262,7 +262,7 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
                 ),
                 child: const Text('Confirmar Reserva',
                     style:
-                    TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ),
             const SizedBox(height: 16),
