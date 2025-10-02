@@ -17,7 +17,6 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Usamos widget.reserva para aceder aos dados em todo o método build.
     final reserva = widget.reserva;
     final status = reserva['status'] ?? '-';
     final statusColor = status == 'aceito'
@@ -78,20 +77,20 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
         ),
       );
 
-      if (!mounted) return;
+      if (!mounted || confirm != true) return;
 
-      if (confirm == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reserva cancelada com sucesso')),
-        );
-        Navigator.pop(context);
-      }
+      // Fecha a página e sinaliza alteração para atualizar lista
+      Navigator.pop(context, true);
+
+      // Snackbar será exibido na página anterior
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Reserva cancelada com sucesso!')),
+      );
     }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text("Detalhes da Reserva"),
-        // CORREÇÃO: Cores removidas para obedecer ao tema claro/escuro.
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -128,13 +127,11 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
                 Text("Localização: ${reserva['localizacao'] ?? '-'}"),
                 const SizedBox(height: 16),
 
-                // --- BOTÃO DO MAPA ADICIONADO AQUI ---
-                // Este é o local perfeito para o botão, junto à informação da localização.
+                // Botão do mapa
                 ElevatedButton.icon(
                   icon: const Icon(Icons.map_outlined),
                   label: const Text('Ver no Mapa'),
                   onPressed: () {
-                    // Função auxiliar para converter o valor para double de forma segura.
                     double? _parseDouble(dynamic value) {
                       if (value == null) return null;
                       if (value is double) return value;
@@ -143,15 +140,18 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
                       return null;
                     }
 
-                    // CORREÇÃO: Usamos 'reserva' em vez de 'sala'.
-                    final double latitudeDaSala = _parseDouble(reserva['latitude']) ?? 0.0;
-                    final double longitudeDaSala = _parseDouble(reserva['longitude']) ?? 0.0;
-                    final String nomeDaSala = reserva['nome'] ?? 'Localização Desconhecida';
+                    final double latitudeDaSala =
+                        _parseDouble(reserva['latitude']) ?? 0.0;
+                    final double longitudeDaSala =
+                        _parseDouble(reserva['longitude']) ?? 0.0;
+                    final String nomeDaSala =
+                        reserva['nome'] ?? 'Localização Desconhecida';
 
                     if (latitudeDaSala == 0.0 && longitudeDaSala == 0.0) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Localização não disponível para esta sala.'),
+                          content:
+                          Text('Localização não disponível para esta sala.'),
                           backgroundColor: Colors.orange,
                         ),
                       );
@@ -170,7 +170,6 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
                     );
                   },
                 ),
-                // --- FIM DO BOTÃO DO MAPA ---
 
                 const SizedBox(height: 16),
                 Row(
@@ -198,6 +197,7 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
                 ),
                 Text(reserva['descricao'] ?? '-'),
                 const SizedBox(height: 24),
+
                 // Botões de ação
                 if (status == 'pendente')
                   SizedBox(
