@@ -1,4 +1,4 @@
-// lib/services/notification_service.dart
+// lib/services/firebase_notification_service.dart
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -88,7 +88,7 @@ class NotificationService {
       id,
       title,
       body,
-      tz.TZDateTime.now(tz.local).add(duration), // Horário agendado
+      tz.TZDateTime.now(tz.local).add(duration),
       const NotificationDetails(
         android: AndroidNotificationDetails(
           'scheduled_channel_id',
@@ -104,8 +104,6 @@ class NotificationService {
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-      UILocalNotificationDateInterpretation.absoluteTime, // <- AQUI é o lugar certo
     );
   }
 }

@@ -1,54 +1,71 @@
-import 'package:apk/providers/theme_provider.dart';
-import 'package:apk/user/favorito/favoritos.dart';
-import 'package:apk/user/perfil/config.dart';
-import 'package:apk/user/perfil/perfil.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_core/firebase_core.dart';
 
+// Providers
+import 'package:apk/providers/theme_provider.dart';
+
+// Notification services
 import 'package:apk/user/perfil/notification_service.dart';
+import 'package:apk/user/perfil/firebase_notification_service.dart';
 
-// Telas principais
-import 'user/dashboard.dart';
-import 'admin/admin_dashboard.dart';
-import 'user/splash_screen.dart';
-
-// Auth
+// Auth pages
 import 'auth/login_page.dart';
 import 'auth/registro_page.dart';
 import 'auth/recuperacao_page.dart';
 
+// Main screens
+import 'user/splash_screen.dart';
+import 'user/dashboard.dart';
+import 'user/perfil/perfil.dart';
+import 'user/favorito/favoritos.dart';
+import 'user/perfil/config.dart';
+import 'admin/admin_dashboard.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Inicializa .env
+  // 1️⃣ Load environment variables (.env)
   try {
     await dotenv.load(fileName: ".env");
-    print("✅ .env carregado com sucesso!");
+    print("✅ .env loaded successfully!");
   } catch (e) {
-    print("❌ Erro ao carregar .env: $e");
+    print("❌ Error loading .env: $e");
   }
 
-  // 2. Inicializa Supabase
+  // 2️⃣ Initialize Supabase
   try {
     await Supabase.initialize(
       url: dotenv.env['SUPABASE_URL']!,
       anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
     );
-    print("✅ Supabase conectado com sucesso!");
+    print("✅ Supabase connected successfully!");
   } catch (e) {
-    print("❌ Erro ao conectar Supabase: $e");
+    print("❌ Error connecting to Supabase: $e");
   }
 
-  // 3. Inicializa notificações locais
+  // 3️⃣ Initialize local notifications
   try {
     await NotificationService().init();
-    print("✅ Notification Service inicializado com sucesso!");
+    print("✅ Local Notification Service initialized successfully!");
   } catch (e) {
-    print("❌ Erro ao inicializar Notification Service: $e");
+    print("❌ Error initializing Notification Service: $e");
   }
 
+  // 4️⃣ Initialize Firebase and FCM
+  try {
+    await Firebase.initializeApp();
+    print("✅ Firebase initialized successfully!");
+
+    await FirebaseNotificationService.initFirebaseMessaging();
+    print("✅ Firebase Cloud Messaging initialized successfully!");
+  } catch (e) {
+    print("❌ Error initializing Firebase or FCM: $e");
+  }
+
+  // 5️⃣ Run the app
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
