@@ -1,16 +1,18 @@
 // -----------------------------------------------------------------------------
 // dashboard.dart
 // Tela principal do usuário com BottomAppBar, Drawer lateral, tema claro/escuro
-// e integração com Supabase.
+// e integração com Supabase + Provider para controle de tema.
 // -----------------------------------------------------------------------------
 
-import 'package:apk/user/perfil/perfil.dart';
-import 'package:apk/user/reserva/pages/minhas_reservas.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 
-// Telas importadas
+// Providers e páginas
+import 'package:apk/providers/theme_provider.dart';
+import 'package:apk/user/perfil/perfil.dart';
+import 'package:apk/user/reserva/pages/minhas_reservas.dart';
 import 'favorito/favoritos.dart';
 import 'home/home.dart';
 import 'home/reservar/detalhes_sala.dart';
@@ -26,16 +28,15 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   int _selectedIndex = 0;
+  Map<String, dynamic>? _profile;
 
   // Páginas principais
   final List<Widget> _pages = const [
     HomePage(),
-    MinhasReservasPage(), // corrigido de ReservasPage
+    MinhasReservasPage(),
     SalasFavoritasPage(),
     PerfilPage(),
   ];
-
-  Map<String, dynamic>? _profile;
 
   @override
   void initState() {
@@ -43,7 +44,9 @@ class _DashboardPageState extends State<DashboardPage> {
     _loadProfile();
   }
 
-  // Carrega perfil do usuário
+  // -----------------------------------------------------------------------------
+  // Carrega perfil do usuário logado no Supabase
+  // -----------------------------------------------------------------------------
   Future<void> _loadProfile() async {
     final user = supabase.auth.currentUser;
     if (user != null) {
@@ -52,35 +55,32 @@ class _DashboardPageState extends State<DashboardPage> {
           .select()
           .eq('id', user.id)
           .maybeSingle();
-      if (mounted) {
-        setState(() {
-          _profile = response as Map<String, dynamic>?;
-        });
-      }
+
+      if (mounted) setState(() => _profile = response as Map<String, dynamic>?);
     }
   }
 
+  // -----------------------------------------------------------------------------
   // Controle de navegação inferior
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
+  // -----------------------------------------------------------------------------
+  void _onItemTapped(int index) => setState(() => _selectedIndex = index);
 
+  // -----------------------------------------------------------------------------
   // Logout com confirmação
+  // -----------------------------------------------------------------------------
   Future<void> _logout() async {
-    final bool? confirmar = await showDialog<bool>(
+    final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Confirmar Logout"),
         content: const Text("Você realmente deseja sair da sua conta?"),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text("Cancelar"),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.pop(context, true),
             child: const Text("Sair"),
           ),
         ],
@@ -94,7 +94,9 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  // Scanner de QR Code -> Detalhes da sala
+  // -----------------------------------------------------------------------------
+  // Scanner de QR Code -> abre Detalhes da sala
+  // -----------------------------------------------------------------------------
   void _openQRScanner() {
     Navigator.push(
       context,
@@ -103,7 +105,7 @@ class _DashboardPageState extends State<DashboardPage> {
           onScan: (String salaId) async {
             Navigator.pop(context); // fecha scanner
 
-            // Buscar sala
+            // Buscar dados da sala
             final salaResponse = await supabase
                 .from('salas')
                 .select()
@@ -132,6 +134,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 .from('feedback_salas')
                 .select('nota')
                 .eq('sala_id', salaId);
+
             double media = 0;
             if (avaliacoes.isNotEmpty) {
               media = avaliacoes
@@ -167,17 +170,24 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  // -----------------------------------------------------------------------------
+  // Construção da interface principal
+  // -----------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     final theme = Theme.of(context);
 
     return SafeArea(
       bottom: false,
       child: Scaffold(
+        backgroundColor: theme.colorScheme.surface,
         appBar: AppBar(
           centerTitle: true,
           title: Image.asset('assets/LogoHorizontal.png', height: 30),
         ),
+
+        // Drawer lateral com dados do usuário e logout
         drawer: Drawer(
           child: ListView(
             padding: EdgeInsets.zero,
@@ -235,7 +245,7 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
               ListTile(
                 leading: const Icon(Icons.star),
-                title: const Text("Salas"),
+                title: const Text("Salas Favoritas"),
                 onTap: () {
                   Navigator.pop(context);
                   _onItemTapped(2);
@@ -258,27 +268,35 @@ class _DashboardPageState extends State<DashboardPage> {
             ],
           ),
         ),
+
+        // Conteúdo dinâmico das páginas
         body: _pages[_selectedIndex],
+
+        // Botão de escanear QR Code
         floatingActionButton: FloatingActionButton(
           onPressed: _openQRScanner,
           backgroundColor: theme.colorScheme.primary,
-          child: Icon(Icons.qr_code_scanner,
-              size: 32, color: theme.colorScheme.onPrimary),
+          foregroundColor: theme.colorScheme.onPrimary,
+          child: const Icon(Icons.qr_code_scanner, size: 30),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+
+        // BottomAppBar com integração ao tema
         bottomNavigationBar: BottomAppBar(
+          color: theme.colorScheme.primary, // fundo dinâmico
           shape: const CircularNotchedRectangle(),
           notchMargin: 6.0,
+          elevation: 6,
           child: SizedBox(
             height: 60,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(Icons.home, 0),
-                _buildNavItem(Icons.calendar_today, 1),
+                _buildNavItem(Icons.home, 0, theme),
+                _buildNavItem(Icons.calendar_today, 1, theme),
                 const SizedBox(width: 40),
-                _buildNavItem(Icons.star, 2),
-                _buildNavItem(Icons.person, 3),
+                _buildNavItem(Icons.star, 2, theme),
+                _buildNavItem(Icons.person, 3, theme),
               ],
             ),
           ),
@@ -287,15 +305,19 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildNavItem(IconData icon, int index) {
+  // -----------------------------------------------------------------------------
+  // Ícones da BottomAppBar com cores de acordo com o tema
+  // -----------------------------------------------------------------------------
+  Widget _buildNavItem(IconData icon, int index, ThemeData theme) {
     final isSelected = _selectedIndex == index;
-    final theme = Theme.of(context);
-    final color = isSelected
-        ? theme.bottomNavigationBarTheme.selectedItemColor
-        : theme.bottomNavigationBarTheme.unselectedItemColor;
 
     return IconButton(
-      icon: Icon(icon, color: color),
+      icon: Icon(
+        icon,
+        color: isSelected
+            ? theme.colorScheme.onPrimary // branco ativo
+            : theme.colorScheme.onPrimary.withOpacity(0.6), // branco suave
+      ),
       onPressed: () => _onItemTapped(index),
       iconSize: 28,
       padding: EdgeInsets.zero,

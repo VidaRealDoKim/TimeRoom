@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'confirmacao_reserva.dart';
 
 /// Cliente global do Supabase
 final supabase = Supabase.instance.client;
@@ -237,6 +236,7 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
   // -------------------------- SALVAMENTO DE RESERVA ------------------------
   // =========================================================================
 
+  /// Salva a reserva no Supabase e exibe confirmação via diálogo
   Future<void> _salvarReserva() async {
     if (slotSelecionado == null) {
       ScaffoldMessenger.of(context)
@@ -287,28 +287,28 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
         throw "Erro ao salvar a reserva.";
       }
 
-      // Navega para página de confirmação
+      // ---------- ALERTA DE CONFIRMAÇÃO ----------
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ConfirmacaoReservaPage(
-            reserva: {
-              'nome_sala': widget.sala['nome'],
-              'url': widget.sala['url'],
-              'capacidade': widget.sala['capacidade'],
-              'localizacao': widget.sala['localizacao'],
-              'descricao': widget.sala['descricao'],
-              'mediaAvaliacoes': widget.sala['media_avaliacoes'] ?? 0,
-              'comentarios': comentarios,
-              'data_reserva': widget.dataSelecionada,
-              'hora_inicio': horaInicioStr,
-              'hora_fim': horaFimStr,
-              'observacoes': _observacoesController.text,
-            },
-            horariosDisponiveis: horariosDisponiveis,
-            horariosOcupados: horariosOcupados,
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          title: const Text('Reserva Confirmada'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Sala: ${widget.sala['nome']}'),
+              Text('Data: ${DateFormat('dd/MM/yyyy').format(widget.dataSelecionada)}'),
+              Text('Horário: $horaInicioStr - $horaFimStr'),
+            ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
+              child: const Text('Voltar para Home'),
+            ),
+          ],
         ),
       );
     } catch (e) {
