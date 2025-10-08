@@ -1,4 +1,4 @@
-import 'package:apk/user/reserva/pages/detalhes_sala.dart';
+import 'package:apk/user/home/reservar/detalhes_sala.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';

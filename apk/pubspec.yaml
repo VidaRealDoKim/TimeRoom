@@ -11,38 +11,17 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Estado e gerenciamento
   provider: ^6.1.2
-
-  # Calendário
   table_calendar: ^3.0.9
-
-  # Supabase
   supabase_flutter: ^2.5.4
-
-  # Variáveis de ambiente
   flutter_dotenv: ^5.2.0
-
-  # Internacionalização
   intl: ^0.18.1
-
-  # QR Code
   qr_code_scanner_plus: ^2.0.12
   qr_flutter: ^4.1.0
-
-  # Armazenamento seguro
   flutter_secure_storage: ^9.2.2
-
-  # Preferências locais
   shared_preferences: ^2.3.2
-
-  # Autenticação biométrica
   local_auth: ^2.2.0
-
-  # Compartilhar conteúdo
   share_plus: ^12.0.0
-
-  # Imagem e arquivos
   image_picker: ^1.0.7
   path: ^1.8.3
 
@@ -52,10 +31,12 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   google_maps_flutter: ^2.5.0
   geolocator: ^10.1.0
+  flutter_launcher_icons: "^0.13.1"
 
 flutter:
   uses-material-design: true
   assets:
+    - assets/icon.png
     - assets/logo.png
     - assets/logo1.png
     - assets/logo_fundo.png
@@ -65,3 +46,11 @@ flutter:
     - assets/logo_ellipse.png
     - assets/logo_retangulo.png
     - .env
+
+# Configuração do ícone e nome do app
+flutter_icons:
+  android: true
+  image_path: "assets/icon.png" # caminho atualizado
+  adaptive_icon_background: "#1ABC9C" # fundo verde para Android 8+
+  adaptive_icon_foreground: "assets/icon.png"
+  app_name: "TimeRoom"
