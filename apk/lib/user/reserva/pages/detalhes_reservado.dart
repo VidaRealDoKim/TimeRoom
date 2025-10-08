@@ -95,13 +95,14 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
         final userId = reserva['user_id'];
 
         // 1️⃣ Deletar reserva
-        final response = await supabase
+        final deleted = await supabase
             .from('reservas')
             .delete()
-            .eq('id', idReserva);
+            .eq('id', idReserva)
+            .select(); // retorna os dados deletados
 
-        if (response.error != null) {
-          throw response.error!.message;
+        if (deleted == null || deleted.isEmpty) {
+          throw 'Não foi possível cancelar a reserva.';
         }
 
         // 2️⃣ Criar log no reservas_log
@@ -113,19 +114,29 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
         });
 
         if (!mounted) return;
-        Navigator.pop(context, true);
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reserva cancelada com sucesso!')),
+          const SnackBar(
+            content: Text('Reserva cancelada com sucesso!'),
+            backgroundColor: Colors.green,
+          ),
         );
+
+        // Depois de mostrar a mensagem, fechar a tela
+        Navigator.pop(context, true);
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao cancelar: $e')),
+          SnackBar(
+            content: Text('Erro ao cancelar: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       } finally {
         if (mounted) setState(() => isCancelling = false);
       }
     }
+
 
     Widget buildActionButton({
       required String label,
