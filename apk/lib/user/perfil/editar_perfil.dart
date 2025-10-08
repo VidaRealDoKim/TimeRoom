@@ -270,11 +270,16 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Editar Perfil"),
-        backgroundColor: colors.primary,
+        // A propriedade 'backgroundColor' foi REMOVIDA.
+        // A AppBar agora vai buscar a cor (verde-água ou escura) ao tema global.
         actions: [
           IconButton(
             onPressed: _excluirConta,
-            icon: Icon(Icons.delete_forever, color: colors.error),
+            icon: Icon(
+              Icons.delete_forever,
+              // CORREÇÃO: Usamos a cor de erro do tema, que se adapta.
+              color: Theme.of(context).colorScheme.error,
+            ),
             tooltip: "Excluir Conta",
           ),
         ],
