@@ -218,7 +218,14 @@ class _HomePageState extends State<HomePage> {
           children: [
             const SizedBox(width: 12),
             Expanded(
-              child: Text("Olá${userName != null ? ', $userName' : ''}!"),
+              child: Text(
+                "Olá${userName != null ? ', $userName' : ''}!", // O seu texto
+                style: TextStyle(
+                  fontSize: 24,               // Define o tamanho da fonte para 24
+                  fontWeight: FontWeight.bold, // Deixa o texto em negrito
+                  color: Colors.white,        // Define a cor do texto como branco
+                ),
+              )
             ),
           ],
         ),
