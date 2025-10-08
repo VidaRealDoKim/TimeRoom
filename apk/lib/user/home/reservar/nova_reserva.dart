@@ -7,10 +7,7 @@ final supabase = Supabase.instance.client;
 
 /// Página para criar uma nova reserva
 class NovaReservaPage extends StatefulWidget {
-  /// Dados da sala selecionada
   final Map<String, dynamic> sala;
-
-  /// Data escolhida no calendário
   final DateTime dataSelecionada;
 
   const NovaReservaPage({
@@ -24,31 +21,16 @@ class NovaReservaPage extends StatefulWidget {
 }
 
 class _NovaReservaPageState extends State<NovaReservaPage> {
-  /// Indica se está carregando (usado para mostrar CircularProgressIndicator)
   bool loading = false;
-
-  /// Controlador de texto para observações opcionais
   final TextEditingController _observacoesController = TextEditingController();
 
-  /// Lista de comentários da sala
   List<Map<String, dynamic>> comentarios = [];
-
-  /// Horários padrão de funcionamento da sala
   List<Map<String, TimeOfDay>> horariosDisponiveis = [];
-
-  /// Horários já reservados nesta data
   List<Map<String, TimeOfDay>> horariosOcupados = [];
-
-  /// Slots de horários livres gerados
   List<TimeOfDay> slotsGerados = [];
-
-  /// Slot selecionado pelo usuário
   TimeOfDay? slotSelecionado;
-
-  /// Duração selecionada da reserva (em minutos)
   int duracaoMinutos = 60;
 
-  /// Durações disponíveis para escolha (15min, 30min e 1h)
   final List<int> duracoesDisponiveis = [15, 30, 60];
 
   @override
@@ -62,7 +44,6 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
   // -------------------------- HELPERS --------------------------------------
   // =========================================================================
 
-  /// Converte campo de data/hora vindo do banco em [DateTime]
   DateTime? _parseDateTimeField(dynamic value) {
     if (value == null) return null;
     if (value is DateTime) return value.toUtc();
@@ -80,23 +61,25 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
     return null;
   }
 
-  /// Converte [DateTime] para [TimeOfDay]
   TimeOfDay _timeOfDayFromDateTime(DateTime dt) =>
       TimeOfDay(hour: dt.toLocal().hour, minute: dt.toLocal().minute);
 
-  /// Converte [TimeOfDay] para minutos desde 00:00
   int _toMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
 
-  /// Verifica se dois intervalos se sobrepõem
   bool _rangesOverlap(int aStart, int aEnd, int bStart, int bEnd) {
     return aStart < bEnd && bStart < aEnd;
+  }
+
+  String _statusLabel(dynamic status) {
+    if (status == null) return "Pendente";
+    if (status == true) return "Aprovado";
+    return "Recusado";
   }
 
   // =========================================================================
   // -------------------------- CARREGAMENTO DE DADOS ------------------------
   // =========================================================================
 
-  /// Carrega comentários e avaliações da sala
   Future<void> _loadComentarios() async {
     final salaId = widget.sala['id'];
     final response = await supabase
@@ -110,25 +93,19 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
     });
   }
 
-  /// Carrega horários disponíveis e reservas já feitas para a data escolhida
   Future<void> _loadHorarios() async {
     final salaId = widget.sala['id'];
     final dataStr = DateFormat('yyyy-MM-dd').format(widget.dataSelecionada);
 
-    // 1) Horários de funcionamento configurados
-    final disponiveis = await supabase
-        .from('salas_horarios')
-        .select('inicio, fim')
-        .eq('sala_id', salaId);
+    final disponiveis =
+    await supabase.from('salas_horarios').select('inicio, fim').eq('sala_id', salaId);
 
-    // 2) Reservas existentes na data
     final ocupados = await supabase
         .from('reservas')
         .select('hora_inicio, hora_fim')
         .eq('sala_id', salaId)
         .eq('data_reserva', dataStr);
 
-    // Normaliza horários disponíveis
     final List<Map<String, TimeOfDay>> disponiveisNormalized = [];
     for (final h in disponiveis) {
       final inicioDt = _parseDateTimeField(h['inicio']);
@@ -141,7 +118,6 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
       }
     }
 
-    // Normaliza horários ocupados
     final List<Map<String, TimeOfDay>> ocupadosNormalized = [];
     for (final h in ocupados) {
       try {
@@ -177,7 +153,6 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
   // -------------------------- GERAÇÃO DE SLOTS -----------------------------
   // =========================================================================
 
-  /// Gera slots de horários livres, considerando reservas existentes
   void _gerarSlotsDisponiveis() {
     final List<TimeOfDay> slots = [];
     const stepMinutes = 30;
@@ -193,7 +168,6 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
         final slotStartMin = _toMinutes(slotStart);
         final slotEndMin = slotStartMin + duracaoMinutos;
 
-        // Verifica se cabe no horário da sala e não conflita com reservas
         if (slotEndMin <= end) {
           bool conflitante = false;
           for (final occ in horariosOcupados) {
@@ -215,8 +189,6 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
 
     setState(() {
       slotsGerados = slots;
-
-      // Se o slot selecionado não existe mais, limpa
       if (slotSelecionado != null &&
           !slotsGerados.any((s) => _toMinutes(s) == _toMinutes(slotSelecionado!))) {
         slotSelecionado = null;
@@ -224,7 +196,6 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
     });
   }
 
-  /// Quando usuário muda a duração, regeneramos os slots
   void _onDuracaoChanged(int minutos) {
     setState(() {
       duracaoMinutos = minutos;
@@ -236,7 +207,6 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
   // -------------------------- SALVAMENTO DE RESERVA ------------------------
   // =========================================================================
 
-  /// Salva a reserva no Supabase e exibe confirmação via diálogo
   Future<void> _salvarReserva() async {
     if (slotSelecionado == null) {
       ScaffoldMessenger.of(context)
@@ -256,7 +226,6 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
 
       if (fimMin > 24 * 60) throw "Horário inválido (extrapola o dia)";
 
-      // Verifica conflito com reservas existentes
       for (final occ in horariosOcupados) {
         final occStart = _toMinutes(occ['inicio']!);
         final occEnd = _toMinutes(occ['fim']!);
@@ -270,24 +239,22 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
       final horaFimStr =
           '${(fimMin ~/ 60).toString().padLeft(2, '0')}:${(fimMin % 60).toString().padLeft(2, '0')}';
 
-      // Inserção no Supabase
       final insertResponse = await supabase.from('reservas').insert({
         'user_id': userId,
         'sala_id': widget.sala['id'],
         'data_reserva': DateFormat('yyyy-MM-dd').format(widget.dataSelecionada),
         'hora_inicio': horaInicioStr,
         'hora_fim': horaFimStr,
-        'status': 'pendente',
+        'status': null, // pendente (espera)
         'titulo': _observacoesController.text.isEmpty
             ? 'Reserva'
             : _observacoesController.text,
-      });
+      }).select();
 
       if (insertResponse.isEmpty) {
         throw "Erro ao salvar a reserva.";
       }
 
-      // ---------- ALERTA DE CONFIRMAÇÃO ----------
       if (!mounted) return;
       showDialog(
         context: context,
@@ -301,6 +268,7 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
               Text('Sala: ${widget.sala['nome']}'),
               Text('Data: ${DateFormat('dd/MM/yyyy').format(widget.dataSelecionada)}'),
               Text('Horário: $horaInicioStr - $horaFimStr'),
+              Text('Status: ${_statusLabel(null)}'),
             ],
           ),
           actions: [
@@ -324,7 +292,6 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
   // -------------------------- UI HELPERS ----------------------------------
   // =========================================================================
 
-  /// Mostra avaliação em estrelas
   Widget _buildEstrelas(double media) {
     return Row(
       children: List.generate(
@@ -338,7 +305,6 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
     );
   }
 
-  /// Formata [TimeOfDay] para "HH:mm"
   String _formatTimeOfDay(TimeOfDay t) {
     final dt = DateTime(2000, 1, 1, t.hour, t.minute);
     return DateFormat.Hm().format(dt);
@@ -365,7 +331,6 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Imagem da sala
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: sala['url'] != null
@@ -380,8 +345,6 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
                   : Container(height: 200, color: Colors.grey[300]),
             ),
             const SizedBox(height: 16),
-
-            // Nome e avaliação
             Text(sala['nome'] ?? '',
                 style: const TextStyle(
                     fontSize: 24, fontWeight: FontWeight.bold)),
@@ -392,8 +355,6 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
             Text('Local: ${sala['localizacao'] ?? '-'}'),
             const SizedBox(height: 12),
             Text(sala['descricao'] ?? ''),
-
-            // Data e observações
             const SizedBox(height: 16),
             Text('Data da Reserva: $dataFormatada'),
             const SizedBox(height: 8),
@@ -402,12 +363,10 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
               maxLines: 3,
               decoration: InputDecoration(
                 hintText: 'Observações (opcional)',
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                border:
+                OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
-
-            // Escolha de duração (15min, 30min, 1h)
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 8),
@@ -431,8 +390,6 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
                 );
               }).toList(),
             ),
-
-            // Horários disponíveis
             const SizedBox(height: 16),
             const Text('Horários disponíveis:',
                 style: TextStyle(fontWeight: FontWeight.bold)),
@@ -458,8 +415,7 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
                     runSpacing: 8,
                     children: slotsGerados.map((slot) {
                       final selected = slotSelecionado != null &&
-                          _toMinutes(slotSelecionado!) ==
-                              _toMinutes(slot);
+                          _toMinutes(slotSelecionado!) == _toMinutes(slot);
                       return ChoiceChip(
                         label: Text(_formatTimeOfDay(slot)),
                         selected: selected,
@@ -474,11 +430,9 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
                   const SizedBox(height: 12),
                   if (slotSelecionado != null)
                     Text(
-                        'Selecionado: ${_formatTimeOfDay(slotSelecionado!)} → ${_formatTimeOfDay(TimeOfDay(hour: (( _toMinutes(slotSelecionado!) + duracaoMinutos) ~/ 60) % 24, minute: ( _toMinutes(slotSelecionado!) + duracaoMinutos) % 60))}'),
+                        'Selecionado: ${_formatTimeOfDay(slotSelecionado!)} → ${_formatTimeOfDay(TimeOfDay(hour: ((_toMinutes(slotSelecionado!) + duracaoMinutos) ~/ 60) % 24, minute: (_toMinutes(slotSelecionado!) + duracaoMinutos) % 60))}'),
                 ],
               ),
-
-            // Comentários
             const SizedBox(height: 24),
             const Divider(),
             const SizedBox(height: 8),
@@ -511,8 +465,6 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
                 );
               }).toList(),
             ),
-
-            // Botão confirmar
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
@@ -526,8 +478,8 @@ class _NovaReservaPageState extends State<NovaReservaPage> {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: const Text('Confirmar Reserva',
-                    style: TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold)),
+                    style:
+                    TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(height: 16),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../home/reservar/detalhes_sala.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/theme_provider.dart';
 
 class SalaCard extends StatelessWidget {
   final Map<String, dynamic>? sala; // usado em HomePage/DetalhesSalaPage
@@ -19,7 +21,6 @@ class SalaCard extends StatelessWidget {
     this.onTap,
   });
 
-  /// Monta estrelas de avaliação
   Widget _buildEstrelas(double media) {
     return Row(
       children: List.generate(
@@ -35,21 +36,27 @@ class SalaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Seleciona dados de Map ou Sala
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
+    // Dados
     final imageUrl = sala != null ? sala!['url'] : salaObj?.url;
     final nome = sala != null ? sala!['nome'] : salaObj?.nome ?? '';
     final capacidade = sala != null ? sala!['capacidade'] : salaObj?.capacidade ?? 0;
     final localizacao = sala != null ? sala!['localizacao'] : salaObj?.localizacao ?? '-';
     final itens = salaObj?.itens ?? [];
+    final mediaAvaliacoes = salaObj?.mediaAvaliacoes ?? 0;
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 3,
+      elevation: 4,
+      clipBehavior: Clip.antiAlias,
+      color: themeProvider.themeMode == ThemeMode.dark
+          ? ThemeProvider.darkTheme.colorScheme.surfaceContainerHighest
+          : ThemeProvider.lightTheme.colorScheme.surface,
       child: InkWell(
         onTap: onTap ??
                 () {
-              // Se não houver onTap, navega para DetalhesSalaPage (somente se Map estiver disponível)
               if (sala != null) {
                 Navigator.push(
                   context,
@@ -65,27 +72,56 @@ class SalaCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Imagem da sala + botão de favorito
+            // Imagem da sala + botão favorito
             Stack(
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: imageUrl != null
+                  child: imageUrl != null && imageUrl.isNotEmpty
                       ? Image.network(
                     imageUrl,
                     height: 180,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
+                    loadingBuilder: (context, child, progress) =>
+                    progress == null
+                        ? child
+                        : const SizedBox(
                       height: 180,
-                      color: Colors.grey[300],
-                      child: const Center(child: Icon(Icons.meeting_room, size: 50)),
+                      child: Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 180,
+                      color: themeProvider.themeMode == ThemeMode.dark
+                          ? ThemeProvider.darkTheme.colorScheme.surfaceContainerHighest
+                          : ThemeProvider.lightTheme.colorScheme.surface,
+                      child: Center(
+                        child: Icon(
+                          Icons.image_not_supported,
+                          size: 50,
+                          color: themeProvider.themeMode == ThemeMode.dark
+                              ? ThemeProvider.darkTheme.colorScheme.onSurfaceVariant
+                              : ThemeProvider.lightTheme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ),
                   )
                       : Container(
                     height: 180,
-                    color: Colors.grey[300],
-                    child: const Center(child: Icon(Icons.meeting_room, size: 50)),
+                    color: themeProvider.themeMode == ThemeMode.dark
+                        ? ThemeProvider.darkTheme.colorScheme.surfaceContainerHighest
+                        : ThemeProvider.lightTheme.colorScheme.surface,
+                    child: Center(
+                      child: Icon(
+                        Icons.meeting_room,
+                        size: 50,
+                        color: themeProvider.themeMode == ThemeMode.dark
+                            ? ThemeProvider.darkTheme.colorScheme.onSurfaceVariant
+                            : ThemeProvider.lightTheme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
                 ),
                 Positioned(
@@ -101,24 +137,27 @@ class SalaCard extends StatelessWidget {
                 ),
               ],
             ),
-            // Detalhes da sala
+
+            // Detalhes
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    nome,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
+                  Text(nome,
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Row(
                     children: [
                       const Icon(Icons.location_on, size: 16, color: Colors.grey),
                       const SizedBox(width: 4),
-                      Text(
-                        localizacao,
-                        style: const TextStyle(color: Colors.grey),
+                      Flexible(
+                        child: Text(
+                          localizacao,
+                          style: const TextStyle(color: Colors.grey),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
@@ -128,10 +167,10 @@ class SalaCard extends StatelessWidget {
                   if (salaObj != null)
                     Row(
                       children: [
-                        _buildEstrelas(salaObj!.mediaAvaliacoes),
+                        _buildEstrelas(mediaAvaliacoes),
                         const SizedBox(width: 8),
                         Text(
-                          "(${itens.length} avaliações)",
+                          "(${itens.length} itens)",
                           style: const TextStyle(color: Colors.grey),
                         ),
                       ],
@@ -146,7 +185,6 @@ class SalaCard extends StatelessWidget {
   }
 }
 
-/// Classe modelo usada em ReservasPage
 class Sala {
   final String id;
   final String nome;
@@ -155,6 +193,8 @@ class Sala {
   final String? url;
   final List<String> itens;
   final double mediaAvaliacoes;
+  final double? latitude;
+  final double? longitude;
 
   Sala({
     required this.id,
@@ -164,5 +204,7 @@ class Sala {
     this.url,
     required this.itens,
     required this.mediaAvaliacoes,
+    this.latitude,
+    this.longitude,
   });
 }

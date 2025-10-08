@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import '../../perfil/mapa_sala_page.dart';
 import 'nova_reserva.dart';
 import 'package:apk/providers/theme_provider.dart';
 
 /// Página de detalhes da sala.
-/// Mostra imagem, status e permite reserva com cores dependentes do tema.
-class DetalhesSalaPage extends StatelessWidget {
+/// Mostra imagens em carrossel, status e permite reserva.
+class DetalhesSalaPage extends StatefulWidget {
   final Map<String, dynamic> sala;
   final DateTime dataSelecionada;
 
@@ -16,13 +17,20 @@ class DetalhesSalaPage extends StatelessWidget {
     required this.dataSelecionada,
   });
 
+  @override
+  State<DetalhesSalaPage> createState() => _DetalhesSalaPageState();
+}
+
+class _DetalhesSalaPageState extends State<DetalhesSalaPage> {
+  int _currentIndex = 0;
+
   void _reservarSala(BuildContext context) async {
     await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => NovaReservaPage(
-          sala: sala,
-          dataSelecionada: dataSelecionada,
+          sala: widget.sala,
+          dataSelecionada: widget.dataSelecionada,
         ),
       ),
     );
@@ -35,15 +43,17 @@ class DetalhesSalaPage extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
-    final status = sala['ocupada'] == true ? "Ocupada" : "Livre";
+    final status = widget.sala['ocupada'] == true ? "Ocupada" : "Livre";
     final statusColor =
-    sala['ocupada'] == true ? Colors.redAccent : colors.primary;
+    widget.sala['ocupada'] == true ? Colors.redAccent : colors.primary;
 
-    final imageUrl = sala['url'] ?? '';
+    // --- Lista de imagens ---
+    final List<dynamic> imagens =
+        widget.sala['imagens'] ?? [widget.sala['url'] ?? ''];
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(sala['nome'] ?? 'Detalhes da Sala'),
+        title: Text(widget.sala['nome'] ?? 'Detalhes da Sala'),
         backgroundColor: colors.surface,
         foregroundColor: colors.onSurface,
         elevation: 0,
@@ -53,36 +63,82 @@ class DetalhesSalaPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- IMAGEM DA SALA ---
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: imageUrl.isNotEmpty
-                  ? Image.network(
-                imageUrl,
-                width: double.infinity,
-                height: 200,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.grey[300],
-                  height: 200,
-                  alignment: Alignment.center,
-                  child: Icon(Icons.image_not_supported,
-                      size: 60,
-                      color: isDark
-                          ? Colors.grey[700]
-                          : Colors.grey[600]),
-                ),
-              )
-                  : Container(
-                color: Colors.grey[300],
-                height: 200,
-                alignment: Alignment.center,
-                child: Icon(Icons.image,
-                    size: 60,
-                    color:
-                    isDark ? Colors.grey[700] : Colors.grey[600]),
+            // --- CARROSSEL DE IMAGENS ---
+            if (imagens.isNotEmpty)
+              Column(
+                children: [
+                  CarouselSlider(
+                    options: CarouselOptions(
+                      height: 220,
+                      enlargeCenterPage: true,
+                      enableInfiniteScroll: imagens.length > 1,
+                      autoPlay: imagens.length > 1,
+                      viewportFraction: 1.0,
+                      autoPlayInterval: const Duration(seconds: 4),
+                      onPageChanged: (index, reason) {
+                        setState(() {
+                          _currentIndex = index;
+                        });
+                      },
+                    ),
+                    items: imagens.map((imgUrl) {
+                      return Builder(
+                        builder: (BuildContext context) {
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: (imgUrl != null && imgUrl.isNotEmpty)
+                                ? Image.network(
+                              imgUrl,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder:
+                                  (context, error, stackTrace) => Container(
+                                color: Colors.grey[300],
+                                alignment: Alignment.center,
+                                child: Icon(Icons.image_not_supported,
+                                    size: 60,
+                                    color: isDark
+                                        ? Colors.grey[700]
+                                        : Colors.grey[600]),
+                              ),
+                            )
+                                : Container(
+                              color: Colors.grey[300],
+                              alignment: Alignment.center,
+                              child: Icon(Icons.image,
+                                  size: 60,
+                                  color: isDark
+                                      ? Colors.grey[700]
+                                      : Colors.grey[600]),
+                            ),
+                          );
+                        },
+                      );
+                    }).toList(),
+                  ),
+
+                  // --- Indicadores (pontinhos) ---
+                  if (imagens.length > 1)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: imagens.asMap().entries.map((entry) {
+                        return Container(
+                          width: 8,
+                          height: 8,
+                          margin: const EdgeInsets.symmetric(
+                              vertical: 8, horizontal: 3),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _currentIndex == entry.key
+                                ? colors.primary
+                                : Colors.grey,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                ],
               ),
-            ),
+
             const SizedBox(height: 20),
 
             // --- STATUS E CAPACIDADE ---
@@ -103,11 +159,12 @@ class DetalhesSalaPage extends StatelessWidget {
                 ),
                 const SizedBox(width: 16),
                 Text(
-                  'Capacidade: ${sala['capacidade'] ?? '-'} pessoas',
+                  'Capacidade: ${widget.sala['capacidade'] ?? '-'} pessoas',
                   style: TextStyle(fontSize: 16, color: colors.onSurface),
                 ),
               ],
             ),
+
             const SizedBox(height: 24),
 
             // --- BOTÃO VER NO MAPA ---
@@ -131,15 +188,16 @@ class DetalhesSalaPage extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => MapaSalaPage(
-                        latitude: sala['latitude'] ?? -26.9187,
-                        longitude: sala['longitude'] ?? -49.0661,
-                        nomeSala: sala['nome'] ?? 'Sala',
+                        latitude: widget.sala['latitude'] ?? -26.9187,
+                        longitude: widget.sala['longitude'] ?? -49.0661,
+                        nomeSala: widget.sala['nome'] ?? 'Sala',
                       ),
                     ),
                   );
                 },
               ),
             ),
+
             const SizedBox(height: 24),
 
             // --- DESCRIÇÃO ---
@@ -153,16 +211,18 @@ class DetalhesSalaPage extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              sala['descricao'] ?? 'Sem descrição disponível.',
-              style: TextStyle(fontSize: 16, height: 1.4, color: colors.onSurface),
+              widget.sala['descricao'] ?? 'Sem descrição disponível.',
+              style: TextStyle(
+                  fontSize: 16, height: 1.4, color: colors.onSurface),
             ),
+
             const SizedBox(height: 32),
 
             // --- BOTÃO RESERVAR ---
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: sala['ocupada'] == true
+                onPressed: widget.sala['ocupada'] == true
                     ? null
                     : () => _reservarSala(context),
                 style: ElevatedButton.styleFrom(
