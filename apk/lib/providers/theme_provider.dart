@@ -4,6 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 // -----------------------------------------------------------------------------
 // Gestor de Temas (ThemeProvider)
 // -----------------------------------------------------------------------------
+/// Controla o tema da aplicação (Claro, Escuro, Sistema) e guarda a
+/// preferência do utilizador no dispositivo.
+// -----------------------------------------------------------------------------
 class ThemeProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
 
@@ -55,9 +58,9 @@ class ThemeProvider extends ChangeNotifier {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // TEMA CLARO
-  // ---------------------------------------------------------------------------
+  // --- DEFINIÇÕES DE TEMA CENTRALIZADAS ---
+
+  // Tema Claro
   static final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
     primarySwatch: Colors.teal,
@@ -65,77 +68,84 @@ class ThemeProvider extends ChangeNotifier {
     appBarTheme: const AppBarTheme(
       backgroundColor: Color(0xFF1ABC9C),
       foregroundColor: Colors.white,
-      elevation: 0,
     ),
+    // --- CORREÇÃO FINAL APLICADA AQUI ---
+    // Usamos o nome de classe correto: 'BottomAppBarThemeData'.
     bottomAppBarTheme: const BottomAppBarThemeData(
       color: Color(0xFF1ABC9C),
     ),
     cardColor: Colors.white,
-    colorScheme: ColorScheme.light(
-      primary: const Color(0xFF1ABC9C), // Verde principal
-      background: const Color(0xFFF5F5F5), // Fundo claro
-      surface: Colors.white, // Cards e superfícies
-      onPrimary: Colors.white, // Texto sobre verde
-      onSurface: Colors.black87, // Texto normal
-      onBackground: Colors.black87,
+    colorScheme: const ColorScheme.light(
+      primary: Color(0xFF1ABC9C),
+      secondary: Color(0xFF16A085),
+      background: Color(0xFFF5F5F5),
+      surface: Colors.white,
+      onPrimary: Colors.white, // Cor do texto/ícones em cima da cor primária
     ),
-    textTheme: const TextTheme(
-      bodyMedium: TextStyle(color: Colors.black87),
-    ),
+
+    // Define um estilo global para todos os ElevatedButtons.
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ButtonStyle(
-        backgroundColor: MaterialStatePropertyAll(Color(0xFF1ABC9C)),
-        foregroundColor: MaterialStatePropertyAll(Colors.white),
-        padding: MaterialStatePropertyAll(EdgeInsets.symmetric(vertical: 16)),
-        shape: MaterialStatePropertyAll(
-          RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+        backgroundColor: MaterialStateProperty.all(const Color(0xFF1ABC9C)),
+        foregroundColor: MaterialStateProperty.all(Colors.white),
+        padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 16)),
+        shape: MaterialStateProperty.all(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        textStyle: MaterialStatePropertyAll(
-          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        textStyle: MaterialStateProperty.all(
+          const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     ),
   );
 
-  // ---------------------------------------------------------------------------
-  // TEMA ESCURO
-  // ---------------------------------------------------------------------------
+  // Tema Escuro
   static final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
     primarySwatch: Colors.teal,
     scaffoldBackgroundColor: const Color(0xFF121212),
     appBarTheme: const AppBarTheme(
-      backgroundColor: Color(0xFF1E1E1E),
+      backgroundColor: Color(0xFF222222),
       foregroundColor: Colors.white,
-      elevation: 0,
     ),
+    // --- CORREÇÃO FINAL APLICADA AQUI ---
+    // Usamos o nome de classe correto: 'BottomAppBarThemeData'.
     bottomAppBarTheme: const BottomAppBarThemeData(
-      color: Color(0xFF1E1E1E),
+      color: Color(0xFF222222),
     ),
     cardColor: const Color(0xFF1E1E1E),
-    colorScheme: ColorScheme.dark(
-      primary: const Color(0xFF1ABC9C), // Verde principal
-      background: const Color(0xFF121212), // Fundo escuro
-      surface: const Color(0xFF1E1E1E), // Cards
-      onPrimary: Colors.black, // Texto sobre verde
-      onSurface: Colors.white70, // Texto normal
-      onBackground: Colors.white70,
+    colorScheme: const ColorScheme.dark(
+      primary: Color(0xFF1ABC9C),
+      secondary: Color(0xFF16A085),
+      background: Color(0xFF121212),
+      surface: Color(0xFF1E1E1E),
+      onPrimary: Colors.black, // Cor do texto/ícones em cima da cor primária
     ),
-    textTheme: const TextTheme(
-      bodyMedium: TextStyle(color: Colors.white70),
-    ),
+
+    // Define um estilo global para os ElevatedButtons no modo escuro.
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ButtonStyle(
-        backgroundColor: MaterialStatePropertyAll(Color(0xFF1ABC9C)),
-        foregroundColor: MaterialStatePropertyAll(Colors.black),
-        padding: MaterialStatePropertyAll(EdgeInsets.symmetric(vertical: 16)),
-        shape: MaterialStatePropertyAll(
-          RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+        backgroundColor: MaterialStateProperty.all(const Color(0xFF222222)),
+        foregroundColor: MaterialStateProperty.all(const Color(0xFF1ABC9C)),
+        padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 16)),
+        shape: MaterialStateProperty.all(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        textStyle: MaterialStatePropertyAll(
-          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        textStyle: MaterialStateProperty.all(
+          const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     ),
   );
 }
+

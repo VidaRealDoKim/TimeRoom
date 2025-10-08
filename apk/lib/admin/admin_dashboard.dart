@@ -110,7 +110,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         backgroundColor: Colors.white,
         centerTitle: true,
         title: Image.asset(
-          "assets/LogoHorizontal1.png",
+          "assets/LogoHorizontal.png",
           height: 30,
           fit: BoxFit.contain,
         ),
