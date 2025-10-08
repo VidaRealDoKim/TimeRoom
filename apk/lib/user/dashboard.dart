@@ -314,9 +314,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return IconButton(
       icon: Icon(
         icon,
-        color: isSelected
-            ? theme.colorScheme.onPrimary // branco ativo
-            : theme.colorScheme.onPrimary.withOpacity(0.6), // branco suave
+        color: Colors.white,
       ),
       onPressed: () => _onItemTapped(index),
       iconSize: 28,

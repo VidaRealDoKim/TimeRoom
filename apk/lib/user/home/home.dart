@@ -1,8 +1,8 @@
 // lib/home/home.dart
+import 'package:apk/user/home/reservar/detalhes_sala.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'reservar/detalhes_sala.dart';
 import '../home/pesquisa/pesquisar.dart';
 import 'selecionar_datas.dart';
 
@@ -17,6 +17,9 @@ class Sala {
   final String? url;
   final List<String> itens;
   final double mediaAvaliacoes;
+  // Propriedades de localização para o mapa.
+  final double? latitude;
+  final double? longitude;
 
   Sala({
     required this.id,
@@ -26,9 +29,20 @@ class Sala {
     this.url,
     required this.itens,
     required this.mediaAvaliacoes,
+    this.latitude,
+    this.longitude,
   });
 
   factory Sala.fromJson(Map<String, dynamic> json, List<String> itens, double media) {
+    // Função auxiliar para converter os dados de localização de forma segura.
+    double? _parseDouble(dynamic value) {
+      if (value == null) return null;
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      if (value is String) return double.tryParse(value);
+      return null;
+    }
+
     return Sala(
       id: json['id'],
       nome: json['nome'],
@@ -37,6 +51,8 @@ class Sala {
       url: json['url'],
       itens: itens,
       mediaAvaliacoes: media,
+      latitude: _parseDouble(json['latitude']),
+      longitude: _parseDouble(json['longitude']),
     );
   }
 }
@@ -75,7 +91,7 @@ class _HomePageState extends State<HomePage> {
       if (userId != null) {
         final profile =
         await supabase.from('profiles').select('name').eq('id', userId).single();
-        setState(() => userName = profile['name'] as String?);
+        if (mounted) setState(() => userName = profile['name'] as String?);
       }
     } catch (e) {
       debugPrint("Erro ao carregar nome do usuário: $e");
@@ -85,7 +101,8 @@ class _HomePageState extends State<HomePage> {
   /// Carrega as salas do banco de dados
   Future<void> _loadSalas() async {
     try {
-      final response = await supabase.from('salas').select();
+      // Usar o '*' garante que as colunas 'latitude' e 'longitude' são buscadas.
+      final response = await supabase.from('salas').select('*');
       List<Sala> salas = [];
 
       for (final row in response) {
@@ -108,13 +125,15 @@ class _HomePageState extends State<HomePage> {
         salas.add(Sala.fromJson(row, itens, media));
       }
 
-      setState(() {
-        _salas = salas;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _salas = salas;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       debugPrint("Erro ao carregar salas: $e");
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -128,9 +147,11 @@ class _HomePageState extends State<HomePage> {
           .from('salas_favoritas')
           .select('sala_id')
           .eq('usuario_id', userId);
-      setState(() {
-        favoritas = data.map<String>((item) => item['sala_id'] as String).toSet();
-      });
+      if (mounted) {
+        setState(() {
+          favoritas = data.map<String>((item) => item['sala_id'] as String).toSet();
+        });
+      }
     } catch (e) {
       debugPrint("Erro ao carregar favoritas: $e");
     }
@@ -193,7 +214,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// Lista horizontal de salas
-  Widget _buildHorizontalList(List<Sala> salas, ColorScheme colorScheme) {
+  Widget _buildHorizontalList(List<Sala> salas) {
     return SizedBox(
       height: 280,
       child: ListView.separated(
@@ -204,7 +225,7 @@ class _HomePageState extends State<HomePage> {
           final sala = salas[index];
           return SizedBox(
             width: 200,
-            child: _buildSalaCard(sala, colorScheme),
+            child: _buildSalaCard(sala),
           );
         },
       ),
@@ -212,11 +233,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// Card individual de sala
-  Widget _buildSalaCard(Sala sala, ColorScheme colorScheme) {
+  Widget _buildSalaCard(Sala sala) {
+    final theme = Theme.of(context);
+
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 3,
-      color: colorScheme.surface,
+      // A cor do card é controlada pelo `cardColor` do tema.
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -232,6 +255,8 @@ class _HomePageState extends State<HomePage> {
                   'descricao': sala.itens.join(', '),
                   'media_avaliacoes': sala.mediaAvaliacoes,
                   'ocupada': false,
+                  'latitude': sala.latitude,
+                  'longitude': sala.longitude,
                 },
                 dataSelecionada: _dataEntrada,
               ),
@@ -252,9 +277,9 @@ class _HomePageState extends State<HomePage> {
                     child: sala.url != null
                         ? Image.network(sala.url!, fit: BoxFit.cover)
                         : Container(
-                      color: colorScheme.onSurface.withAlpha(25),
-                      child: const Center(
-                        child: Icon(Icons.meeting_room, size: 50),
+                      color: theme.colorScheme.surfaceVariant,
+                      child: Center(
+                        child: Icon(Icons.meeting_room, size: 50, color: theme.colorScheme.onSurfaceVariant),
                       ),
                     ),
                   ),
@@ -267,10 +292,9 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       Text(
                         sala.nome,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
-                          color: colorScheme.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -279,13 +303,13 @@ class _HomePageState extends State<HomePage> {
                       Row(
                         children: [
                           Icon(Icons.location_on,
-                              size: 14, color: colorScheme.onSurface.withAlpha(128)),
+                              size: 14, color: theme.hintColor),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               sala.localizacao ?? '-',
                               style: TextStyle(
-                                color: colorScheme.onSurface.withAlpha(128),
+                                color: theme.hintColor,
                                 fontSize: 12,
                               ),
                               maxLines: 1,
@@ -331,20 +355,29 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    // -------------------- Separação de seções --------------------
     final populares = List<Sala>.from(_salas)
       ..sort((a, b) => b.mediaAvaliacoes.compareTo(a.mediaAvaliacoes));
     final favoritasList = _salas.where((s) => favoritas.contains(s.id)).toList();
     final todas = List<Sala>.from(_salas);
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      // CORREÇÃO: Cor de fundo removida para usar o `scaffoldBackgroundColor` do tema.
       appBar: AppBar(
+        // CORREÇÃO: Cor de fundo removida para usar o `appBarTheme` do tema.
         elevation: 0,
-        backgroundColor: colorScheme.primary,
-        title: Text(
-          "Olá${userName != null ? ', $userName' : ''}!",
-          style: TextStyle(color: colorScheme.onPrimary, fontWeight: FontWeight.bold),
+        title: Row(
+          children: [
+            const SizedBox(width: 12),
+            Expanded(
+              // A saudação ao utilizador é mantida.
+              child: Text(
+                "Olá${userName != null ? ', $userName' : ''}!",
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold, // Adicione esta linha para o negrito
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       body: SingleChildScrollView(
@@ -359,6 +392,7 @@ class _HomePageState extends State<HomePage> {
                 height: 50,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
+                  // CORREÇÃO: Usa a cor de superfície do tema.
                   color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
@@ -371,13 +405,13 @@ class _HomePageState extends State<HomePage> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.date_range, color: colorScheme.onSurface.withAlpha(128)),
+                    Icon(Icons.date_range, color: colorScheme.onSurface.withOpacity(0.6)),
                     const SizedBox(width: 8),
                     Text(
                       "${DateFormat('dd/MM/yyyy').format(_dataEntrada)} - "
                           "${DateFormat('dd/MM/yyyy').format(_dataSaida)}",
                       style:
-                      TextStyle(color: colorScheme.onSurface.withAlpha(128), fontSize: 16),
+                      TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 16),
                     ),
                   ],
                 ),
@@ -406,11 +440,11 @@ class _HomePageState extends State<HomePage> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.search, color: colorScheme.onSurface.withAlpha(128)),
+                    Icon(Icons.search, color: colorScheme.onSurface.withOpacity(0.6)),
                     const SizedBox(width: 8),
                     Text(
                       "Pesquisar por nome",
-                      style: TextStyle(color: colorScheme.onSurface.withAlpha(128), fontSize: 16),
+                      style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 16),
                     ),
                   ],
                 ),
@@ -419,24 +453,25 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 24),
             // Carrosséis
             if (favoritasList.isNotEmpty) ...[
-              const Text("Suas favoritas",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              Text("Suas favoritas",
+                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
-              _buildHorizontalList(favoritasList, colorScheme),
+              _buildHorizontalList(favoritasList),
               const SizedBox(height: 24),
             ],
-            const Text("Populares",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text("Populares",
+                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            _buildHorizontalList(populares, colorScheme),
+            _buildHorizontalList(populares),
             const SizedBox(height: 24),
-            const Text("Todas as salas",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text("Todas as salas",
+                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            _buildHorizontalList(todas, colorScheme),
+            _buildHorizontalList(todas),
           ],
         ),
       ),
     );
   }
 }
+
