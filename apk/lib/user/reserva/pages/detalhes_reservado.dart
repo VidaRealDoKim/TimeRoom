@@ -46,16 +46,25 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content:
-          Text('Reserva confirmada com sucesso! Você pode aceder à sala.'),
+          content: Text(
+              'Reserva confirmada com sucesso! Você pode aceder à sala.'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
 
     void compartilharReserva() {
       final text =
-          'A minha reserva na sala ${reserva['nome']} em ${DateFormat('dd/MM/yyyy').format(reserva['data'])} das ${reserva['horaInicio']} às ${reserva['horaFim']} foi confirmada!';
-      Share.share(text);
+          'A minha reserva na sala ${reserva['nome']} em ${DateFormat('dd/MM/yyyy').format(reserva['data'])} '
+          'das ${reserva['horaInicio']} às ${reserva['horaFim']} foi confirmada!';
+
+      SharePlus.instance.share(
+        ShareParams(
+          text: text,
+          subject: "Minha Reserva",
+        ),
+      );
     }
 
     Future<void> cancelarReserva() async {
@@ -77,15 +86,24 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
         ),
       );
 
-      if (!mounted || confirm != true) return;
+      if (confirm != true) return;
 
-      // Fecha a página e sinaliza alteração para atualizar lista
+      if (!mounted) return;
+
       Navigator.pop(context, true);
 
-      // Snackbar será exibido na página anterior
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Reserva cancelada com sucesso!')),
-      );
+      // Snackbar bonita na tela anterior
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Reserva cancelada com sucesso!'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      });
     }
 
     return Scaffold(
@@ -132,7 +150,7 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
                   icon: const Icon(Icons.map_outlined),
                   label: const Text('Ver no Mapa'),
                   onPressed: () {
-                    double? _parseDouble(dynamic value) {
+                    double? parseDouble(dynamic value) {
                       if (value == null) return null;
                       if (value is double) return value;
                       if (value is int) return value.toDouble();
@@ -141,18 +159,19 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
                     }
 
                     final double latitudeDaSala =
-                        _parseDouble(reserva['latitude']) ?? 0.0;
+                        parseDouble(reserva['latitude']) ?? 0.0;
                     final double longitudeDaSala =
-                        _parseDouble(reserva['longitude']) ?? 0.0;
+                        parseDouble(reserva['longitude']) ?? 0.0;
                     final String nomeDaSala =
                         reserva['nome'] ?? 'Localização Desconhecida';
 
                     if (latitudeDaSala == 0.0 && longitudeDaSala == 0.0) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content:
-                          Text('Localização não disponível para esta sala.'),
+                          content: Text(
+                              'Localização não disponível para esta sala.'),
                           backgroundColor: Colors.orange,
+                          behavior: SnackBarBehavior.floating,
                         ),
                       );
                       return;
@@ -189,7 +208,8 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
                 Text(
                   "Data: ${DateFormat('dd/MM/yyyy').format(reserva['data'])}",
                 ),
-                Text("Horário: ${reserva['horaInicio']} - ${reserva['horaFim']}"),
+                Text(
+                    "Horário: ${reserva['horaInicio']} - ${reserva['horaFim']}"),
                 const SizedBox(height: 16),
                 const Text(
                   "Descrição:",
@@ -253,7 +273,7 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
                   if (confirmado)
                     Text(
                       "Presença confirmada ✅ Você pode aceder à sala.",
-                      style: TextStyle(
+                      style: const TextStyle(
                           color: Colors.green, fontWeight: FontWeight.bold),
                     ),
                 ],
