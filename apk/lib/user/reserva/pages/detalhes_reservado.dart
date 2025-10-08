@@ -18,6 +18,8 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
   @override
   Widget build(BuildContext context) {
     final reserva = widget.reserva;
+
+    // Ajuste de status
     final status = reserva['status'] ?? '-';
     final statusColor = status == 'aceito'
         ? Colors.green
@@ -25,13 +27,23 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
         ? Colors.red
         : Colors.orange;
 
-    DateTime dataReserva = reserva['data'];
+    // Data da reserva
+    DateTime dataReserva;
+    if (reserva['data_reserva'] is String) {
+      dataReserva = DateTime.parse(reserva['data_reserva']);
+    } else if (reserva['data_reserva'] is DateTime) {
+      dataReserva = reserva['data_reserva'];
+    } else {
+      dataReserva = DateTime.now();
+    }
+
+    // Horário de início
     DateTime horarioInicio = DateTime(
       dataReserva.year,
       dataReserva.month,
       dataReserva.day,
-      int.parse(reserva['horaInicio'].split(":")[0]),
-      int.parse(reserva['horaInicio'].split(":")[1]),
+      int.parse(reserva['hora_inicio'].split(":")[0]),
+      int.parse(reserva['hora_inicio'].split(":")[1]),
     );
 
     final agora = DateTime.now();
@@ -46,15 +58,15 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content:
-          Text('Reserva confirmada com sucesso! Você pode aceder à sala.'),
+          content: Text(
+              'Reserva confirmada com sucesso! Você pode aceder à sala.'),
         ),
       );
     }
 
     void compartilharReserva() {
       final text =
-          'A minha reserva na sala ${reserva['nome']} em ${DateFormat('dd/MM/yyyy').format(reserva['data'])} das ${reserva['horaInicio']} às ${reserva['horaFim']} foi confirmada!';
+          'A minha reserva na sala ${reserva['nome']} em ${DateFormat('dd/MM/yyyy').format(dataReserva)} das ${reserva['hora_inicio']} às ${reserva['hora_fim']} foi confirmada!';
       Share.share(text);
     }
 
@@ -82,7 +94,6 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
       // Fecha a página e sinaliza alteração para atualizar lista
       Navigator.pop(context, true);
 
-      // Snackbar será exibido na página anterior
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Reserva cancelada com sucesso!')),
       );
@@ -104,7 +115,7 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(
-                  child: reserva['url'] != null
+                  child: reserva['url'] != null && reserva['url'] != ''
                       ? ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.network(
@@ -150,8 +161,8 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
                     if (latitudeDaSala == 0.0 && longitudeDaSala == 0.0) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content:
-                          Text('Localização não disponível para esta sala.'),
+                          content: Text(
+                              'Localização não disponível para esta sala.'),
                           backgroundColor: Colors.orange,
                         ),
                       );
@@ -186,10 +197,9 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
                   ],
                 ),
                 const SizedBox(height: 8),
+                Text("Data: ${DateFormat('dd/MM/yyyy').format(dataReserva)}"),
                 Text(
-                  "Data: ${DateFormat('dd/MM/yyyy').format(reserva['data'])}",
-                ),
-                Text("Horário: ${reserva['horaInicio']} - ${reserva['horaFim']}"),
+                    "Horário: ${reserva['hora_inicio']} - ${reserva['hora_fim']}"),
                 const SizedBox(height: 16),
                 const Text(
                   "Descrição:",
