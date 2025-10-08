@@ -17,7 +17,6 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Usamos widget.reserva para aceder aos dados em todo o método build.
     final reserva = widget.reserva;
     final status = reserva['status'] ?? '-';
     final statusColor = status == 'aceito'
@@ -87,7 +86,6 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
         ),
       );
 
-<<<<<<< HEAD
       if (confirm != true) return;
 
       if (!mounted) return;
@@ -106,22 +104,11 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
           );
         }
       });
-=======
-      if (!mounted) return;
-
-      if (confirm == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reserva cancelada com sucesso')),
-        );
-        Navigator.pop(context);
-      }
->>>>>>> 969a56843a332642fde28ced829afd4097f9e8b7
     }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text("Detalhes da Reserva"),
-        // CORREÇÃO: Cores removidas para obedecer ao tema claro/escuro.
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -158,18 +145,12 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
                 Text("Localização: ${reserva['localizacao'] ?? '-'}"),
                 const SizedBox(height: 16),
 
-                // --- BOTÃO DO MAPA ADICIONADO AQUI ---
-                // Este é o local perfeito para o botão, junto à informação da localização.
+                // Botão do mapa
                 ElevatedButton.icon(
                   icon: const Icon(Icons.map_outlined),
                   label: const Text('Ver no Mapa'),
                   onPressed: () {
-<<<<<<< HEAD
                     double? parseDouble(dynamic value) {
-=======
-                    // Função auxiliar para converter o valor para double de forma segura.
-                    double? _parseDouble(dynamic value) {
->>>>>>> 969a56843a332642fde28ced829afd4097f9e8b7
                       if (value == null) return null;
                       if (value is double) return value;
                       if (value is int) return value.toDouble();
@@ -177,29 +158,18 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
                       return null;
                     }
 
-<<<<<<< HEAD
                     final double latitudeDaSala =
                         parseDouble(reserva['latitude']) ?? 0.0;
                     final double longitudeDaSala =
                         parseDouble(reserva['longitude']) ?? 0.0;
                     final String nomeDaSala =
                         reserva['nome'] ?? 'Localização Desconhecida';
-=======
-                    // CORREÇÃO: Usamos 'reserva' em vez de 'sala'.
-                    final double latitudeDaSala = _parseDouble(reserva['latitude']) ?? 0.0;
-                    final double longitudeDaSala = _parseDouble(reserva['longitude']) ?? 0.0;
-                    final String nomeDaSala = reserva['nome'] ?? 'Localização Desconhecida';
->>>>>>> 969a56843a332642fde28ced829afd4097f9e8b7
 
                     if (latitudeDaSala == 0.0 && longitudeDaSala == 0.0) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-<<<<<<< HEAD
                           content: Text(
                               'Localização não disponível para esta sala.'),
-=======
-                          content: Text('Localização não disponível para esta sala.'),
->>>>>>> 969a56843a332642fde28ced829afd4097f9e8b7
                           backgroundColor: Colors.orange,
                           behavior: SnackBarBehavior.floating,
                         ),
@@ -219,7 +189,6 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
                     );
                   },
                 ),
-                // --- FIM DO BOTÃO DO MAPA ---
 
                 const SizedBox(height: 16),
                 Row(
@@ -248,6 +217,7 @@ class _DetalhesReservadoPageState extends State<DetalhesReservadoPage> {
                 ),
                 Text(reserva['descricao'] ?? '-'),
                 const SizedBox(height: 24),
+
                 // Botões de ação
                 if (status == 'pendente')
                   SizedBox(
